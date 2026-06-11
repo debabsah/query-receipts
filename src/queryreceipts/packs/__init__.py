@@ -2,6 +2,8 @@
 through get_pack(engine) — no engine is special-cased elsewhere."""
 from __future__ import annotations
 
+from .postgres import explain as pg_explain
+from .postgres import grading as pg_grading
 from .sqlserver import grading as ss_grading
 from .sqlserver import planxml, stats_io
 
@@ -17,6 +19,16 @@ REGISTRY: dict = {
         # validation embeds queries as N'…' literals
         # (general materialization needs dynamic SQL on this engine)
         "validation_style": "literal",
+    },
+    "postgres": {
+        "parsers": {
+            "pg_explain": (pg_explain.parse, pg_explain.render),
+        },
+        "grade_validation": pg_grading.grade_validation,
+        "grade_benchmark": pg_grading.grade_benchmark,
+        "diagnostics_kind": "pg_explain",
+        # CREATE TEMP TABLE x AS (query) accepts CTEs natively
+        "validation_style": "inject",
     },
 }
 

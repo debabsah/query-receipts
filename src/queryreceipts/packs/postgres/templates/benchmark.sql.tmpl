@@ -1,0 +1,16 @@
+-- receipts prescription: benchmark — ORIGINAL vs OPTIMIZED, PostgreSQL
+-- PROTOCOL (pinned in the case ledger BEFORE you run this):
+--   run this script TWICE back-to-back; the SECOND run is the headline
+--   (warm cache). Save the SECOND run's full output to: {{EXPECTED_CAPTURE}}
+\pset format unaligned
+\pset tuples_only on
+\echo ====BEGIN_SECTION:original====
+EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)
+-- ===INJECT_ORIGINAL_QUERY===
+;
+\echo ====END_SECTION:original====
+\echo ====BEGIN_SECTION:optimized====
+EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)
+-- ===INJECT_OPTIMIZED_QUERY===
+;
+\echo ====END_SECTION:optimized====

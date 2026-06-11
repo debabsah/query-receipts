@@ -97,10 +97,10 @@ def render_certificate(cert: dict) -> str:
         v = cert["validation"]["counts"]
         lines.append(f"Equivalence: {v['PASS']} checks passed, 0 failed.")
         imp = cert["benchmark"]["improvement"]
+        parts = [f"{k.removesuffix('_pct')} -{v}%"
+                 for k, v in imp.items() if v is not None]
         lines.append(
-            f"Performance: elapsed -{imp['elapsed_pct']}%, "
-            f"cpu -{imp['cpu_pct']}%, reads -{imp['reads_pct']}% "
-            "(per pinned protocol).")
+            f"Performance: {', '.join(parts)} (per pinned protocol).")
     elif cert["verdict"] == "REFUTED":
         lines.append("The rewrite is NOT equivalent:")
         for f in cert["validation"]["failures"]:

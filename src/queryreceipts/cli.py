@@ -224,8 +224,9 @@ def cmd_grade(args) -> int:
         print(f"  {g['reason']}")
     if g.get("improvement"):
         imp = g["improvement"]
-        print(f"  elapsed -{imp['elapsed_pct']}% | cpu -{imp['cpu_pct']}% "
-              f"| reads -{imp['reads_pct']}%")
+        parts = [f"{k.removesuffix('_pct')} -{v}%"
+                 for k, v in imp.items() if v is not None]
+        print("  " + " | ".join(parts))
     return 0
 
 

@@ -1,0 +1,11 @@
+-- receipts prescription: diagnostics — PostgreSQL EXPLAIN ANALYZE baseline
+-- Run: psql -X -q -d {{DB_NAME}} -f <this file> > capture   (or: receipts run)
+-- Save the ENTIRE output to: {{EXPECTED_CAPTURE}}
+-- NOTE: EXPLAIN ANALYZE executes the query once.
+\pset format unaligned
+\pset tuples_only on
+\echo ====BEGIN_SECTION:baseline====
+EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)
+-- ===INJECT_ORIGINAL_QUERY===
+;
+\echo ====END_SECTION:baseline====

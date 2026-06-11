@@ -1,0 +1,142 @@
+-- receipts prescription: validation — equivalence proof, PostgreSQL
+-- Both queries materialize in THIS session; gate rows record the context.
+-- Run: psql -X -q -d {{DB_NAME}} -f <this file> > results   (or: receipts run)
+-- Save the full output to: {{EXPECTED_CAPTURE}}
+-- Output rows: test_name  status  detail  (PASS/FAIL tests, INFO gates).
+\pset format unaligned
+\pset fieldsep '  '
+\pset tuples_only on
+
+CREATE TEMP TABLE old_result AS (
+-- ===INJECT_ORIGINAL_QUERY===
+);
+CREATE TEMP TABLE new_result AS (
+-- ===INJECT_OPTIMIZED_QUERY===
+);
+CREATE TEMP TABLE test_results (
+    test_name text, status text, detail text);
+
+-- comparability gates (INFO rows)
+INSERT INTO test_results VALUES
+ ('gate:engine_version', 'INFO', version()),
+ ('gate:database', 'INFO', current_database()),
+ ('gate:timezone', 'INFO', current_setting('TimeZone')),
+ ('gate:datestyle', 'INFO', current_setting('DateStyle'));
+
+-- test: row_count
+INSERT INTO test_results
+SELECT 'row_count',
+       CASE WHEN o.c = n.c THEN 'PASS' ELSE 'FAIL' END,
+       'old=' || o.c || ' new=' || n.c
+FROM (SELECT count(*) c FROM old_result) o,
+     (SELECT count(*) c FROM new_result) n;
+
+-- tests: bidirectional EXCEPT (authoritative)
+INSERT INTO test_results
+SELECT 'except_old_to_new',
+       CASE WHEN c = 0 THEN 'PASS' ELSE 'FAIL' END,
+       c || ' rows missing in NEW'
+FROM (SELECT count(*) c FROM
+      (SELECT * FROM old_result EXCEPT SELECT * FROM new_result) x) t;
+INSERT INTO test_results
+SELECT 'except_new_to_old',
+       CASE WHEN c = 0 THEN 'PASS' ELSE 'FAIL' END,
+       c || ' extra rows in NEW'
+FROM (SELECT count(*) c FROM
+      (SELECT * FROM new_result EXCEPT SELECT * FROM old_result) x) t;
+
+-- per-column battery: null_dist / distinct_count / minmaxsum
+DO $$
+DECLARE
+    col record;
+    o1 bigint; n1 bigint; o2 bigint; n2 bigint;
+    omin text; omax text; osum numeric;
+    nmin text; nmax text; nsum numeric;
+BEGIN
+    FOR col IN
+        SELECT column_name, data_type
+        FROM information_schema.columns
+        WHERE table_name = 'old_result'
+          AND table_schema LIKE 'pg_temp%'
+    LOOP
+        EXECUTE format(
+            'SELECT count(*) FILTER (WHERE %I IS NULL) FROM old_result',
+            col.column_name) INTO o1;
+        EXECUTE format(
+            'SELECT count(*) FILTER (WHERE %I IS NULL) FROM new_result',
+            col.column_name) INTO n1;
+        INSERT INTO test_results VALUES (
+            'null_dist:' || col.column_name,
+            CASE WHEN o1 = n1 THEN 'PASS' ELSE 'FAIL' END,
+            'old=' || o1 || ' new=' || n1);
+
+        EXECUTE format('SELECT count(DISTINCT %I) FROM old_result',
+                       col.column_name) INTO o2;
+        EXECUTE format('SELECT count(DISTINCT %I) FROM new_result',
+                       col.column_name) INTO n2;
+        INSERT INTO test_results VALUES (
+            'distinct_count:' || col.column_name,
+            CASE WHEN o2 = n2 THEN 'PASS' ELSE 'FAIL' END,
+            'old=' || o2 || ' new=' || n2);
+
+        IF col.data_type IN ('smallint', 'integer', 'bigint', 'numeric',
+                             'real', 'double precision') THEN
+            EXECUTE format('SELECT min(%I)::text, max(%I)::text, '
+                           'sum(%I::numeric) FROM old_result',
+                           col.column_name, col.column_name,
+                           col.column_name) INTO omin, omax, osum;
+            EXECUTE format('SELECT min(%I)::text, max(%I)::text, '
+                           'sum(%I::numeric) FROM new_result',
+                           col.column_name, col.column_name,
+                           col.column_name) INTO nmin, nmax, nsum;
+            INSERT INTO test_results VALUES (
+                'minmaxsum:' || col.column_name,
+                CASE WHEN coalesce(omin, '') = coalesce(nmin, '')
+                      AND coalesce(omax, '') = coalesce(nmax, '')
+                      AND coalesce(osum, 0) = coalesce(nsum, 0)
+                     THEN 'PASS' ELSE 'FAIL' END,
+                'old=' || coalesce(omin, '') || '/' || coalesce(omax, '')
+                 || '/' || coalesce(osum::text, '')
+                 || ' new=' || coalesce(nmin, '') || '/'
+                 || coalesce(nmax, '') || '/' || coalesce(nsum::text, ''));
+        END IF;
+    END LOOP;
+END $$;
+
+-- natural-key duplicates + bidirectional grain strata
+DO $$
+DECLARE
+    nk text := '{{NATURAL_KEY}}';
+    o bigint; n bigint; miss bigint; extra bigint;
+BEGIN
+    IF nk = '' THEN
+        INSERT INTO test_results VALUES (
+            'grain_per_natkey', 'INFO', 'skipped: no natural key provided');
+        RETURN;
+    END IF;
+    EXECUTE format(
+        'SELECT count(*) - count(DISTINCT %I) FROM old_result', nk) INTO o;
+    EXECUTE format(
+        'SELECT count(*) - count(DISTINCT %I) FROM new_result', nk) INTO n;
+    INSERT INTO test_results VALUES (
+        'dup_on_natkey',
+        CASE WHEN o = n THEN 'PASS' ELSE 'FAIL' END,
+        'old_dups=' || o || ' new_dups=' || n);
+
+    EXECUTE format(
+        'SELECT count(*) FROM (SELECT %I k, count(*) c FROM old_result '
+        'GROUP BY %I EXCEPT SELECT %I, count(*) FROM new_result '
+        'GROUP BY %I) x', nk, nk, nk, nk) INTO miss;
+    EXECUTE format(
+        'SELECT count(*) FROM (SELECT %I k, count(*) c FROM new_result '
+        'GROUP BY %I EXCEPT SELECT %I, count(*) FROM old_result '
+        'GROUP BY %I) x', nk, nk, nk, nk) INTO extra;
+    INSERT INTO test_results VALUES (
+        'grain_per_natkey',
+        CASE WHEN miss = 0 AND extra = 0 THEN 'PASS' ELSE 'FAIL' END,
+        miss || ' strata missing in NEW, ' || extra || ' strata extra in NEW');
+END $$;
+
+SELECT test_name, status, detail FROM test_results
+ORDER BY CASE status WHEN 'FAIL' THEN 0 WHEN 'PASS' THEN 1 ELSE 2 END,
+         test_name;

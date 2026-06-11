@@ -12,7 +12,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 KINDS = (
-    "stats_io", "plan_xml", "rowcounts", "index_inventory",
+    "stats_io", "plan_xml", "pg_explain", "rowcounts", "index_inventory",
     "stats_inventory", "validation_results", "benchmark_results", "other",
 )
 TRANSPORTS = ("courier", "approve-each", "mcp", "driver", "ci")
