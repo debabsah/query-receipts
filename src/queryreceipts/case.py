@@ -40,7 +40,10 @@ class Case:
         (root / CASE_FILE).write_text(
             json.dumps(meta, indent=2) + "\n", encoding="utf-8")
         case = cls(root=root, meta=meta)
-        case.append({"event": "case_opened", **meta})
+        # the ledger is the shareable audit record; runner_cmd may contain
+        # connection details, so it lives in case.json only
+        case.append({"event": "case_opened",
+                     **{k: v for k, v in meta.items() if k != "runner_cmd"}})
         return case
 
     @classmethod
