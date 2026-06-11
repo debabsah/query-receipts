@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "queryreceipts"
-version = "0.1.0"
+version = "0.2.0"
 description = "Provably faster: query tuning where every fix ships with receipts."
 readme = "README.md"
 license = { text = "MIT" }

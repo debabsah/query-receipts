@@ -1,6 +1,6 @@
 ---
 name: query-receipts
-description: Use when the user has a slow SQL Server query they want tuned with PROOF — drives the `receipts` CLI through an evidence-gated investigation. Every rewrite ends with a certificate (equivalence proof + benchmark delta), never a bare suggestion. Works offline (user runs SSMS, saves captures) or with any way to execute SQL.
+description: Use when the user has a slow SQL Server or PostgreSQL query they want tuned with PROOF — drives the `receipts` CLI through an evidence-gated investigation. Every rewrite ends with a certificate (equivalence proof + benchmark delta), never a bare suggestion. Works offline (user runs SSMS, saves captures) or with any way to execute SQL.
 ---
 
 # query-receipts
@@ -40,11 +40,20 @@ run SQL (SSMS only / connection available), optional natural key for grain
 checks. Then:
 
 ```
-receipts init <dir> --engine sqlserver --database <DB> --symptom "<symptom>"
+receipts init <dir> --engine <sqlserver|postgres> --database <DB> --symptom "<symptom>"
 ```
 
 Save their query to `<dir>/original.sql`. All later commands take
 `--case <dir>` (or run from inside it).
+
+**Engine notes:** diagnostics evidence kind is `stats_io` on sqlserver,
+`pg_explain` on postgres (section name `baseline`). On postgres,
+EXPLAIN ANALYZE executes the query — say so before they run it.
+
+**If the user can execute SQL from this machine** (sqlcmd/psql/docker), skip
+the courier round-trips: add `--runner-cmd '<cmd with {sql}>'` to init, then
+`receipts run <prescription> --environment <env> --case <dir>` executes and
+registers the capture in one step.
 
 ### 1. Baseline
 

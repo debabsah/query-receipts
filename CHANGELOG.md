@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.2.0] - 2026-06-11
+
+The pre-approved roadmap, shipped:
+
+- **Driver transport** — `receipts run` executes prescriptions via a
+  configurable runner command (`{sql}` placeholder), saves the capture at
+  the prescribed path, and registers it with provenance; runner commands
+  never enter the ledger (first token only — secrets stay out).
+- **MCP transport** — `receipts mcp-serve`: the full toolset as a stdio
+  MCP server (stdlib JSON-RPC), usable from any MCP client.
+- **Postgres pack** — `--engine postgres`: EXPLAIN (ANALYZE, BUFFERS,
+  FORMAT JSON) parsing with loops-aware skew detection, inject-style
+  validation (CTEs native), pg benchmark grading (CPU honestly absent).
+  Proven by a second full-loop e2e (pgfleet) ending in a PROVEN certificate.
+- **CI mode** — `receipts verify`: re-hashes evidence, checks ledger
+  monotonicity and certificate citations, exit 1 on tamper; repo CI now
+  re-proves both engines' cure loops on every push; docs/ci-recipe.md.
+- Engine-aware pack registry; shared section parsing; certificate/grade
+  renderers skip absent metrics instead of inventing them.
+
 ## [0.1.0] - 2026-06-11
 
 Initial release — the cure loop, proven end to end.

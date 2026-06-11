@@ -147,15 +147,30 @@ bash scripts/fleetdb_up.sh        # needs Docker; first run takes minutes
 bash scripts/fleetdb_down.sh
 ```
 
+## Engines and transports
+
+- **Engines:** SQL Server (STATISTICS IO/TIME, showplan XML, plan diff) and
+  PostgreSQL (`EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)`), behind one pack
+  registry — `--engine sqlserver|postgres` at `receipts init`.
+- **Courier** (air-gapped, the base case): prescriptions tell the human
+  exactly what to run and where to save it.
+- **Driver:** `receipts run <prescription> --runner-cmd 'psql -X -q -d db -f {sql}'`
+  executes captures itself and registers them; only the command's first
+  token ever enters the ledger.
+- **MCP:** `receipts mcp-serve` exposes the whole toolset as a stdio MCP
+  server for any MCP client.
+- **CI:** `receipts verify` is a tamper gate for certified cases; see
+  [docs/ci-recipe.md](docs/ci-recipe.md). This repo's own CI re-proves both
+  engines' cure loops on every push.
+
 ## Known limitations (tracked, not hidden)
 
-- Single-statement SELECT workloads only (CTEs fully supported via
-  `dm_exec_describe_first_result_set` + `INSERT…EXEC` materialization);
-  stored procs and DML-ETL validation are future work.
-- Validation staging uses fixed global temp names — don't run two
-  validations concurrently against the same server.
-- Roadmap (pre-approved scope, not yet built): MCP/direct-driver transports,
-  Postgres pack, CI prevention mode.
+- Single-statement SELECT workloads only (CTEs fully supported on both
+  engines); stored procs and DML-ETL validation are future work.
+- SQL Server validation staging uses fixed global temp names — don't run
+  two validations concurrently against the same server.
+- Postgres reports no CPU time; certificates show elapsed and buffer reads
+  only (never an invented number).
 
 ## Lineage
 
