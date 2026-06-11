@@ -70,3 +70,35 @@ class Case:
     def _next_seq(self) -> int:
         events = self.events()
         return (events[-1]["seq"] + 1) if events else 1
+
+    def register_evidence(self, path: Path, *, kind: str, transport: str,
+                          environment: str, runner: str,
+                          captured_at: str = "", notes: str = "") -> Evidence:
+        validate_vocab(kind=kind, transport=transport, environment=environment)
+        path = Path(path).resolve()
+        try:
+            rel = path.relative_to(self.root.resolve())
+        except ValueError:
+            raise CaseError(
+                f"{path} is not inside the case directory {self.root}; "
+                "save captures at prescribed paths inside the case") from None
+        n = sum(1 for e in self.events()
+                if e["event"] == "evidence_registered") + 1
+        ev = Evidence(
+            artifact_id=f"ev-{n:04d}", path=rel.as_posix(),
+            sha256=sha256_of(path), kind=kind,
+            engine=self.meta.get("engine", ""), transport=transport,
+            environment=environment, runner=runner,
+            captured_at=captured_at, registered_at=utcnow(), notes=notes)
+        self.append(ev.to_event())
+        return ev
+
+    def evidence(self) -> list[Evidence]:
+        return [Evidence.from_event(e) for e in self.events()
+                if e["event"] == "evidence_registered"]
+
+    def get_evidence(self, artifact_id: str) -> Evidence:
+        for ev in self.evidence():
+            if ev.artifact_id == artifact_id:
+                return ev
+        raise CaseError(f"no evidence with id {artifact_id}")

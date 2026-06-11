@@ -42,3 +42,44 @@ def test_append_assigns_monotonic_seq(tmp_path):
     case.append({"event": "note", "text": "again"})
     seqs = [e["seq"] for e in case.events()]
     assert seqs == [1, 2, 3]
+
+
+def _capture(case, rel="runs/baseline/diagnostics.txt",
+             text="Table 'T'. Scan count 1, logical reads 5"):
+    p = case.root / rel
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(text, encoding="utf-8")
+    return p
+
+
+def test_register_evidence_appends_ledger_and_assigns_id(tmp_path):
+    case = Case.init(tmp_path / "c", META)
+    p = _capture(case)
+    ev = case.register_evidence(
+        p, kind="stats_io", transport="courier",
+        environment="production", runner="deb")
+    assert ev.artifact_id == "ev-0001"
+    assert ev.path == "runs/baseline/diagnostics.txt"
+    assert len(ev.sha256) == 64
+    assert case.get_evidence("ev-0001") == ev
+
+
+def test_register_evidence_outside_case_root_is_refused(tmp_path):
+    case = Case.init(tmp_path / "c", META)
+    outside = tmp_path / "elsewhere.txt"
+    outside.write_text("x", encoding="utf-8")
+    with pytest.raises(CaseError, match="inside the case directory"):
+        case.register_evidence(
+            outside, kind="stats_io", transport="courier",
+            environment="production", runner="deb")
+
+
+def test_artifact_ids_are_sequential(tmp_path):
+    case = Case.init(tmp_path / "c", META)
+    a = _capture(case, "a.txt")
+    b = _capture(case, "b.txt")
+    ev1 = case.register_evidence(a, kind="other", transport="courier",
+                                 environment="synthetic", runner="deb")
+    ev2 = case.register_evidence(b, kind="other", transport="courier",
+                                 environment="synthetic", runner="deb")
+    assert (ev1.artifact_id, ev2.artifact_id) == ("ev-0001", "ev-0002")
