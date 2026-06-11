@@ -75,6 +75,28 @@ def cmd_parse(args) -> int:
     return 0
 
 
+def cmd_diff(args) -> int:
+    from .packs.sqlserver.plandiff import diff_plans, render_diff
+    from .packs.sqlserver.planxml import parse_plan
+    case = _find_case(args)
+    plans = []
+    for ref in (args.plan_a, args.plan_b):
+        ev = case.get_evidence(ref)
+        if ev.kind != "plan_xml":
+            raise CaseError(f"{ref} is kind {ev.kind!r}, need plan_xml")
+        text = (case.root / ev.path).read_text(encoding="utf-8",
+                                               errors="replace")
+        plans.append(parse_plan(text))
+    d = diff_plans(*plans)
+    case.append({"event": "plans_diffed",
+                 "a": args.plan_a, "b": args.plan_b})
+    if args.json:
+        print(json.dumps(d, indent=2))
+    else:
+        print(render_diff(d), end="")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="receipts")
     sub = p.add_subparsers(dest="command", required=True)
@@ -104,6 +126,13 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--case", default=None)
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(func=cmd_parse)
+
+    sp = sub.add_parser("diff", help="diff two registered plan_xml artifacts")
+    sp.add_argument("plan_a")
+    sp.add_argument("plan_b")
+    sp.add_argument("--case", default=None)
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_diff)
 
     sp = sub.add_parser("status", help="show case state")
     sp.add_argument("--case", default=None)
