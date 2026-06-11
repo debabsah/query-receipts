@@ -72,6 +72,34 @@ def test_full_cure_loop_yields_proven_certificate(fleetdb, tmp_path, capsys):
     assert cert["gates"]["gate:database"] == "FleetDB"
 
 
+FLEETDB_RUNNER = ("docker cp {sql} fleetdb:/tmp/r.sql >/dev/null && "
+                  "docker exec fleetdb /opt/mssql-tools18/bin/sqlcmd -C "
+                  "-S localhost -U sa -P 'Receipts!Pr00f1' -d FleetDB "
+                  "-i /tmp/r.sql")
+
+
+def test_driver_transport_runs_prescription_itself(fleetdb, tmp_path,
+                                                   capsys):
+    """`receipts run` with a runner command — no human courier."""
+    root = tmp_path / "fleetdb-driver-case"
+    assert main(["init", str(root), "--engine", "sqlserver",
+                 "--database", "FleetDB", "--symptom", "slow",
+                 "--runner-cmd", FLEETDB_RUNNER]) == 0
+    shutil.copyfile(EXAMPLES / "original.sql", root / "original.sql")
+    assert main(["prescribe", "diagnostics", "--case", str(root)]) == 0
+    assert main(["run", "prescriptions/diagnostics.sql",
+                 "--environment", "synthetic", "--case", str(root)]) == 0
+    capsys.readouterr()
+    assert main(["parse", "ev-0001", "--case", str(root),
+                 "--section", "baseline_io_time"]) == 0
+    out = capsys.readouterr().out
+    assert "RESERVATION" in out
+    from queryreceipts.case import Case
+    ev = Case.find(root).get_evidence("ev-0001")
+    assert ev.transport == "driver"
+    assert ev.runner == "docker"
+
+
 def test_cte_rewrite_validates_proven(fleetdb, tmp_path, capsys):
     """A WITH-headed rewrite must pass through the general
     materialization path — the limitation the first e2e run exposed."""
