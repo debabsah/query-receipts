@@ -97,6 +97,85 @@ def cmd_diff(args) -> int:
     return 0
 
 
+def cmd_prescribe(args) -> int:
+    from .prescription import issue
+    case = _find_case(args)
+    n = sum(1 for e in case.events()
+            if e["event"] == "prescription_issued"
+            and e["prescription"] == args.kind) + 1
+    injections = {}
+    values = {}
+    if args.kind in ("validation", "benchmark"):
+        if not args.rewrite:
+            raise CaseError(f"--rewrite is required for {args.kind}")
+        rewrite = Path(args.rewrite)
+        if not rewrite.is_absolute():
+            rewrite = case.root / rewrite
+        injections["INJECT_OPTIMIZED_QUERY"] = rewrite.read_text(
+            encoding="utf-8")
+    if args.kind == "validation":
+        values["NATURAL_KEY"] = args.natural_key or ""
+        save_as = f"prescriptions/validation_v{n}.sql"
+        expected = f"validation/v{n}_results.txt"
+        register_kind = "validation_results"
+    elif args.kind == "benchmark":
+        save_as = f"prescriptions/benchmark_v{n}.sql"
+        expected = f"benchmarks/v{n}_results.txt"
+        register_kind = "benchmark_results"
+    else:
+        save_as = "prescriptions/diagnostics.sql"
+        expected = "runs/baseline/diagnostics.txt"
+        register_kind = "stats_io"
+    p = issue(case, args.kind, values=values, save_as=save_as,
+              expected_capture=expected, injections=injections)
+    print(f"prescription written: {p}")
+    print(f"run it, save output to {case.root / expected}, then: "
+          f"receipts add {case.root / expected} --kind {register_kind} ...")
+    return 0
+
+
+def cmd_grade(args) -> int:
+    from .packs.sqlserver.grading import grade_benchmark, grade_validation
+    case = _find_case(args)
+    ev = case.get_evidence(args.artifact)
+    text = (case.root / ev.path).read_text(encoding="utf-8",
+                                           errors="replace")
+    if ev.kind == "validation_results":
+        g = grade_validation(text)
+    elif ev.kind == "benchmark_results":
+        g = grade_benchmark(text)
+    else:
+        raise CaseError(f"cannot grade kind {ev.kind!r}")
+    case.append({"event": "graded", "source": ev.artifact_id,
+                 "verdict": g["verdict"]})
+    if args.json:
+        print(json.dumps(g, indent=2))
+        return 0
+    print(f"{g['verdict']}: {ev.artifact_id} ({ev.kind})")
+    for f in g.get("failures", []):
+        print(f"  FAIL {f['test_name']}: {f['detail']}")
+    if g.get("reason"):
+        print(f"  {g['reason']}")
+    if g.get("improvement"):
+        imp = g["improvement"]
+        print(f"  elapsed -{imp['elapsed_pct']}% | cpu -{imp['cpu_pct']}% "
+              f"| reads -{imp['reads_pct']}%")
+    return 0
+
+
+def cmd_certify(args) -> int:
+    from .certificate import issue_certificate, render_certificate
+    case = _find_case(args)
+    cert = issue_certificate(case, validation_id=args.validation,
+                             benchmark_id=args.benchmark,
+                             rewrite=args.rewrite)
+    if args.json:
+        print(json.dumps(cert, indent=2))
+    else:
+        print(render_certificate(cert), end="")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="receipts")
     sub = p.add_subparsers(dest="command", required=True)
@@ -133,6 +212,29 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--case", default=None)
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(func=cmd_diff)
+
+    sp = sub.add_parser("prescribe", help="render a capture prescription")
+    sp.add_argument("kind",
+                    choices=["diagnostics", "validation", "benchmark"])
+    sp.add_argument("--rewrite", default=None,
+                    help="path to optimized SQL (validation/benchmark)")
+    sp.add_argument("--natural-key", default=None, dest="natural_key")
+    sp.add_argument("--case", default=None)
+    sp.set_defaults(func=cmd_prescribe)
+
+    sp = sub.add_parser("grade", help="grade a registered results capture")
+    sp.add_argument("artifact")
+    sp.add_argument("--case", default=None)
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_grade)
+
+    sp = sub.add_parser("certify", help="issue a certificate for a rewrite")
+    sp.add_argument("--validation", default=None)
+    sp.add_argument("--benchmark", default=None)
+    sp.add_argument("--rewrite", required=True)
+    sp.add_argument("--case", default=None)
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_certify)
 
     sp = sub.add_parser("status", help="show case state")
     sp.add_argument("--case", default=None)

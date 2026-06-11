@@ -63,3 +63,40 @@ def test_parse_subcommand_summarizes_registered_evidence(tmp_path, capsys):
     events = Case.find(root).events()
     derived = [e for e in events if e["event"] == "summary_derived"]
     assert derived and derived[0]["source"] == "ev-0001"
+
+
+def test_prescribe_grade_certify_loop(tmp_path, capsys):
+    root = tmp_path / "c"
+    main(["init", str(root), "--engine", "sqlserver",
+          "--database", "FleetDB", "--symptom", "slow"])
+    (root / "original.sql").write_text("SELECT 1 AS x", encoding="utf-8")
+    opt = root / "optimized" / "optimized_v1.sql"
+    opt.parent.mkdir(parents=True)
+    opt.write_text("SELECT 1 AS x", encoding="utf-8")
+
+    rc = main(["prescribe", "validation", "--rewrite",
+               str(opt), "--natural-key", "x", "--case", str(root)])
+    assert rc == 0
+    assert (root / "prescriptions" / "validation_v1.sql").exists()
+
+    results = root / "validation" / "v1_results.txt"
+    results.parent.mkdir(parents=True)
+    results.write_text(
+        "row_count                      PASS   old=1 new=1\n"
+        "gate:database                  INFO   FleetDB\n", encoding="utf-8")
+    main(["add", str(results), "--kind", "validation_results",
+          "--transport", "courier", "--environment", "synthetic",
+          "--runner", "deb", "--case", str(root)])
+    capsys.readouterr()
+
+    rc = main(["grade", "ev-0001", "--case", str(root)])
+    assert rc == 0
+    assert "PROVEN" in capsys.readouterr().out
+
+    rc = main(["certify", "--validation", "ev-0001",
+               "--rewrite", "optimized/optimized_v1.sql",
+               "--case", str(root)])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "UNVERIFIED" in out   # no benchmark yet — named, not papered over
+    assert "benchmark" in out
