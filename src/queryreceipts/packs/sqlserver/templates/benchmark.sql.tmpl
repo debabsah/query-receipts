@@ -1,0 +1,28 @@
+/* receipts prescription: benchmark — ORIGINAL vs OPTIMIZED, IO/TIME
+   PROTOCOL (pinned in the case ledger BEFORE you run this):
+     run this script TWICE back-to-back; the SECOND run's elapsed time is the
+     headline metric (warm cache). Save the SECOND run's full output to:
+     {{EXPECTED_CAPTURE}}
+*/
+USE [{{DB_NAME}}];
+SET NOCOUNT ON;
+
+PRINT '====BEGIN_SECTION:original====';
+SET STATISTICS IO ON;
+SET STATISTICS TIME ON;
+
+-- ===INJECT_ORIGINAL_QUERY===
+
+SET STATISTICS TIME OFF;
+SET STATISTICS IO OFF;
+PRINT '====END_SECTION:original====';
+
+PRINT '====BEGIN_SECTION:optimized====';
+SET STATISTICS IO ON;
+SET STATISTICS TIME ON;
+
+-- ===INJECT_OPTIMIZED_QUERY===
+
+SET STATISTICS TIME OFF;
+SET STATISTICS IO OFF;
+PRINT '====END_SECTION:optimized====';

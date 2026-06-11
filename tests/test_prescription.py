@@ -57,3 +57,17 @@ def test_validation_prescription_renders_gates_and_both_queries(tmp_path):
     assert "SELECT 1 AS x /* faster */" in text
     assert "EXCEPT" in text
     assert "grain_per_natkey" in text
+
+
+def test_benchmark_prescription_pins_protocol_before_results(tmp_path):
+    case = Case.init(tmp_path / "c", META)
+    (case.root / "original.sql").write_text("SELECT 1 AS x",
+                                            encoding="utf-8")
+    issue(case, "benchmark", values={},
+          save_as="prescriptions/benchmark_v1.sql",
+          expected_capture="benchmarks/v1_results.txt",
+          injections={"INJECT_OPTIMIZED_QUERY": "SELECT 1 AS x"})
+    pinned = [e for e in case.events() if e["event"] == "protocol_pinned"]
+    assert pinned, "benchmark prescription must pin protocol in the ledger"
+    assert pinned[0]["headline_metric"] == "second_run_elapsed_ms"
+    assert pinned[0]["runs_per_query"] == 2
