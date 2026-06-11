@@ -1,0 +1,19 @@
+test_name                      status detail
+------------------------------ ------ ----------------------------------------
+checksum_agg                   PASS   old=-163057 new=-163057 (probabilistic; EXCEPT is authoritative)
+dup_on_natkey                  PASS   old_dups=0 new_dups=0
+except_new_to_old              PASS   0 extra rows in NEW
+except_old_to_new              PASS   0 rows missing in NEW
+distinct_count:x               PASS   old=42 new=42
+grain_per_natkey               PASS   0 strata missing in NEW, 0 strata extra in NEW
+minmaxsum:x                    PASS   old=1/99/2079.0000 new=1/99/2079.0000
+null_dist:x                    PASS   old=0 new=0
+row_count                      PASS   old=66139 new=66139
+gate:ansi_nulls                INFO   1
+gate:database                  INFO   FleetDB
+gate:datefirst                 INFO   7
+gate:engine_version            INFO   16.0.4135.4
+gate:language                  INFO   us_english
+gate:quoted_identifier         INFO   1
+
+(15 rows affected)
