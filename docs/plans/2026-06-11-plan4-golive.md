@@ -29,11 +29,11 @@ passes literals), `tests/test_prescription.py` (new interface), add
 `examples/fleetdb/optimized_v1_cte.sql` + e2e test
 `test_cte_rewrite_validates_proven` (validation-only loop, expects PROVEN).
 
-- [ ] failing unit test: CTE rewrite renders into literals, no unrendered markers
-- [ ] template rewrite + cli literal passing
-- [ ] unit suite green
-- [ ] e2e (both tests) green against fleetdb
-- [ ] commit
+- [x] failing unit test: CTE rewrite renders into literals, no unrendered markers
+- [x] template rewrite + cli literal passing
+- [x] unit suite green
+- [x] e2e (both tests) green against fleetdb
+- [x] commit
 
 ### Task 2: Claude Code plugin skin
 
@@ -48,10 +48,10 @@ hints/index DDL as first move; every claim cites an artifact id) → validation
 certificate and surfaces UNVERIFIED/REFUTED verbatim. CLI invocation:
 `receipts` if installed, else `PYTHONPATH=${CLAUDE_PLUGIN_ROOT}/src python3 -m queryreceipts.cli`.
 
-- [ ] manifests + SKILL.md written
-- [ ] Sonnet smoke test: one `claude` agent (model sonnet) follows SKILL.md
+- [x] manifests + SKILL.md written
+- [x] Sonnet smoke test: one `claude` agent (model sonnet) follows SKILL.md
       cold — verifies every referenced command exists and works; fix mismatches
-- [ ] commit
+- [x] commit
 
 ### Task 3: Worked example
 
@@ -60,16 +60,16 @@ end with the real measured numbers (reads −99.8%, elapsed −91.3%, 16/16
 checks) and the certificate excerpt; doubles as the credibility artifact the
 old project never had.
 
-- [ ] walkthrough written, numbers match the e2e run
-- [ ] commit
+- [x] walkthrough written, numbers match the e2e run
+- [x] commit
 
 ### Task 4: Release polish + publish
 
-- [ ] README: Install (pipx/pip from git), Quickstart (5 commands), plugin
+- [x] README: Install (pipx/pip from git), Quickstart (5 commands), plugin
       install, status table (shipped vs roadmap: MCP/driver transport,
       Postgres pack, CI mode)
-- [ ] CHANGELOG.md for 0.1.0
-- [ ] full unit + integration suites green
-- [ ] `gh repo create debabsah/query-receipts --public --source . --push`
-- [ ] tag v0.1.0, push, `gh release create`
-- [ ] commit + verify repo renders
+- [x] CHANGELOG.md for 0.1.0
+- [x] full unit + integration suites green
+- [x] `gh repo create debabsah/query-receipts --public --source . --push`
+- [x] tag v0.1.0, push, `gh release create`
+- [x] commit + verify repo renders

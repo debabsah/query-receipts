@@ -6,6 +6,44 @@ can take to a change-advisory board.
 
 Short name: **Receipts** (CLI: `receipts`).
 
+## Install
+
+```bash
+pipx install "git+https://github.com/debabsah/query-receipts"   # or pip
+receipts --help
+```
+
+Runtime is pure Python stdlib (≥3.10) — zero dependencies, zero
+supply-chain surface.
+
+As a Claude Code plugin (the conversational skin that drives the CLI):
+
+```
+/plugin marketplace add debabsah/query-receipts
+/plugin install query-receipts@receipts-plugins
+```
+
+## Quickstart
+
+```bash
+receipts init my-case --engine sqlserver --database Sales --symptom "30 min instead of 2"
+cp slow_query.sql my-case/original.sql
+receipts prescribe diagnostics --case my-case     # → run in SSMS, save where it says
+receipts add my-case/runs/baseline/diagnostics.txt --kind stats_io \
+  --transport courier --environment production --runner me --case my-case
+receipts parse ev-0001 --case my-case             # 1 KB summary, not a 50 KB dump
+# …draft optimized/optimized_v1.sql, then prove → measure → certify:
+receipts prescribe validation --rewrite optimized/optimized_v1.sql --natural-key OrderID --case my-case
+receipts grade ev-0002 --case my-case
+receipts prescribe benchmark  --rewrite optimized/optimized_v1.sql --case my-case
+receipts certify --validation ev-0002 --benchmark ev-0003 \
+  --rewrite optimized/optimized_v1.sql --case my-case
+```
+
+See the [worked example](docs/examples/fleetdb-walkthrough.md) — a real
+certificate (reads −99.8%, elapsed −91.3%, 16/16 equivalence checks) from a
+reproducible workload this repo's integration suite runs on every change.
+
 ## The thesis
 
 LLMs made query-tuning *advice* free. What stays scarce is:
