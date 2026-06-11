@@ -111,13 +111,13 @@ bash scripts/fleetdb_down.sh
 
 ## Known limitations (tracked, not hidden)
 
-- Validation materializes queries via a derived-table wrapper, so a rewrite
-  whose outermost statement is a CTE (`WITH …`) cannot be validated yet —
-  the grader correctly returns UNVERIFIED rather than guessing. General
-  materialization (INSERT…EXEC + `dm_exec_describe_first_result_set`) is
-  planned.
-- Single-statement SELECT workloads only; stored procs and DML-ETL
-  validation are future work.
+- Single-statement SELECT workloads only (CTEs fully supported via
+  `dm_exec_describe_first_result_set` + `INSERT…EXEC` materialization);
+  stored procs and DML-ETL validation are future work.
+- Validation staging uses fixed global temp names — don't run two
+  validations concurrently against the same server.
+- Roadmap (pre-approved scope, not yet built): MCP/direct-driver transports,
+  Postgres pack, CI prevention mode.
 
 ## Lineage
 

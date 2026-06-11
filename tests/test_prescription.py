@@ -43,18 +43,17 @@ def test_validation_prescription_renders_gates_and_both_queries(tmp_path):
     case = Case.init(tmp_path / "c", META)
     (case.root / "original.sql").write_text("SELECT 1 AS x",
                                             encoding="utf-8")
-    rw = case.root / "optimized" / "optimized_v1.sql"
-    rw.parent.mkdir(parents=True)
-    rw.write_text("SELECT 1 AS x /* faster */", encoding="utf-8")
     p = issue(case, "validation",
-              values={"NATURAL_KEY": "x"},
+              values={"NATURAL_KEY": "x",
+                      "ORIGINAL_QUERY_LITERAL": "SELECT 1 AS x",
+                      "OPTIMIZED_QUERY_LITERAL":
+                          "WITH c AS (SELECT 1 AS x) SELECT x FROM c"},
               save_as="prescriptions/validation_v1.sql",
-              expected_capture="validation/v1_results.txt",
-              injections={"INJECT_OPTIMIZED_QUERY":
-                          rw.read_text(encoding="utf-8")})
+              expected_capture="validation/v1_results.txt")
     text = p.read_text(encoding="utf-8")
     assert "gate:engine_version" in text
-    assert "SELECT 1 AS x /* faster */" in text
+    assert "WITH c AS (SELECT 1 AS x) SELECT x FROM c" in text
+    assert "dm_exec_describe_first_result_set" in text  # CTE-capable path
     assert "EXCEPT" in text
     assert "grain_per_natkey" in text
 

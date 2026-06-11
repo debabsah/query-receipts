@@ -100,3 +100,21 @@ def test_prescribe_grade_certify_loop(tmp_path, capsys):
     out = capsys.readouterr().out
     assert "UNVERIFIED" in out   # no benchmark yet — named, not papered over
     assert "benchmark" in out
+
+
+def test_prescribe_validation_escapes_quotes_into_literals(tmp_path, capsys):
+    root = tmp_path / "c"
+    main(["init", str(root), "--engine", "sqlserver",
+          "--database", "FleetDB", "--symptom", "slow"])
+    (root / "original.sql").write_text(
+        "SELECT 1 AS x WHERE 'a' = 'a'", encoding="utf-8")
+    opt = root / "optimized" / "optimized_v1.sql"
+    opt.parent.mkdir(parents=True)
+    opt.write_text("SELECT 1 AS x WHERE 'a' = 'a' /* v2 */",
+                   encoding="utf-8")
+    assert main(["prescribe", "validation", "--rewrite", str(opt),
+                 "--natural-key", "x", "--case", str(root)]) == 0
+    text = (root / "prescriptions" / "validation_v1.sql").read_text(
+        encoding="utf-8")
+    assert "WHERE ''a'' = ''a''" in text   # quotes doubled inside N'…'
+    assert "{{" not in text

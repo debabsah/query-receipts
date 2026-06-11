@@ -70,3 +70,26 @@ def test_full_cure_loop_yields_proven_certificate(fleetdb, tmp_path, capsys):
     assert cert["verdict"] == "PROVEN"
     assert cert["benchmark"]["improvement"]["reads_pct"] > 30
     assert cert["gates"]["gate:database"] == "FleetDB"
+
+
+def test_cte_rewrite_validates_proven(fleetdb, tmp_path, capsys):
+    """A WITH-headed rewrite must pass through the general
+    materialization path — the limitation the first e2e run exposed."""
+    root = tmp_path / "fleetdb-cte-case"
+    assert main(["init", str(root), "--engine", "sqlserver",
+                 "--database", "FleetDB", "--symptom", "slow"]) == 0
+    shutil.copyfile(EXAMPLES / "original.sql", root / "original.sql")
+    (root / "optimized").mkdir()
+    shutil.copyfile(EXAMPLES / "optimized_v1_cte.sql",
+                    root / "optimized" / "optimized_v1.sql")
+
+    assert main(["prescribe", "validation",
+                 "--rewrite", "optimized/optimized_v1.sql",
+                 "--natural-key", "RES_ID", "--case", str(root)]) == 0
+    vres = root / "validation" / "v1_results.txt"
+    fleetdb(root / "prescriptions" / "validation_v1.sql", vres)
+    assert main(["add", str(vres), "--kind", "validation_results",
+                 "--transport", "driver", "--environment", "synthetic",
+                 "--runner", "e2e", "--case", str(root)]) == 0
+    assert main(["grade", "ev-0001", "--case", str(root)]) == 0
+    assert "PROVEN" in capsys.readouterr().out

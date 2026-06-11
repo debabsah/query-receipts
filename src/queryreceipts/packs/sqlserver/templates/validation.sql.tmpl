@@ -8,15 +8,53 @@
 USE [{{DB_NAME}}];
 SET NOCOUNT ON;
 
-IF OBJECT_ID('tempdb..#OldResult')   IS NOT NULL DROP TABLE #OldResult;
-SELECT * INTO #OldResult FROM (
--- ===INJECT_ORIGINAL_QUERY===
-) AS _o;
+/* ----- 0. Materialize both queries (general: CTEs allowed) -----
+   Queries are embedded as N'…' literals and described via
+   dm_exec_describe_first_result_set, so any SELECT shape works. Staging
+   uses fixed global temp names — do NOT run two validations concurrently
+   on the same server. If a result set cannot be described, this batch
+   aborts with an error; the grader then reports UNVERIFIED. */
+DECLARE @oldq NVARCHAR(MAX) = N'{{ORIGINAL_QUERY_LITERAL}}';
+DECLARE @newq NVARCHAR(MAX) = N'{{OPTIMIZED_QUERY_LITERAL}}';
+DECLARE @cols NVARCHAR(MAX), @ddl NVARCHAR(MAX);
 
-IF OBJECT_ID('tempdb..#NewResult')   IS NOT NULL DROP TABLE #NewResult;
-SELECT * INTO #NewResult FROM (
--- ===INJECT_OPTIMIZED_QUERY===
-) AS _n;
+IF OBJECT_ID('tempdb..##ReceiptsOld') IS NOT NULL DROP TABLE ##ReceiptsOld;
+IF OBJECT_ID('tempdb..##ReceiptsNew') IS NOT NULL DROP TABLE ##ReceiptsNew;
+
+SELECT @cols = STRING_AGG(CONCAT(QUOTENAME(name), ' ',
+                                 system_type_name, ' NULL'), ', ')
+               WITHIN GROUP (ORDER BY column_ordinal)
+FROM sys.dm_exec_describe_first_result_set(@oldq, NULL, 0)
+WHERE is_hidden = 0;
+IF @cols IS NULL
+BEGIN
+    RAISERROR('cannot describe ORIGINAL result set', 16, 1);
+    RETURN;
+END
+SET @ddl = N'CREATE TABLE ##ReceiptsOld (' + @cols + N')';
+EXEC sp_executesql @ddl;
+INSERT INTO ##ReceiptsOld EXEC sp_executesql @oldq;
+
+SELECT @cols = STRING_AGG(CONCAT(QUOTENAME(name), ' ',
+                                 system_type_name, ' NULL'), ', ')
+               WITHIN GROUP (ORDER BY column_ordinal)
+FROM sys.dm_exec_describe_first_result_set(@newq, NULL, 0)
+WHERE is_hidden = 0;
+IF @cols IS NULL
+BEGIN
+    RAISERROR('cannot describe OPTIMIZED result set', 16, 1);
+    RETURN;
+END
+SET @ddl = N'CREATE TABLE ##ReceiptsNew (' + @cols + N')';
+EXEC sp_executesql @ddl;
+INSERT INTO ##ReceiptsNew EXEC sp_executesql @newq;
+
+IF OBJECT_ID('tempdb..#OldResult') IS NOT NULL DROP TABLE #OldResult;
+SELECT * INTO #OldResult FROM ##ReceiptsOld;
+IF OBJECT_ID('tempdb..#NewResult') IS NOT NULL DROP TABLE #NewResult;
+SELECT * INTO #NewResult FROM ##ReceiptsNew;
+DROP TABLE ##ReceiptsOld;
+DROP TABLE ##ReceiptsNew;
 
 IF OBJECT_ID('tempdb..#TestResults') IS NOT NULL DROP TABLE #TestResults;
 CREATE TABLE #TestResults (

@@ -111,9 +111,16 @@ def cmd_prescribe(args) -> int:
         rewrite = Path(args.rewrite)
         if not rewrite.is_absolute():
             rewrite = case.root / rewrite
-        injections["INJECT_OPTIMIZED_QUERY"] = rewrite.read_text(
-            encoding="utf-8")
+        rewrite_sql = rewrite.read_text(encoding="utf-8")
+        injections["INJECT_OPTIMIZED_QUERY"] = rewrite_sql
     if args.kind == "validation":
+        original = case.root / "original.sql"
+        if not original.exists():
+            raise CaseError("validation needs original.sql in the case root")
+        # validation embeds both queries as N'…' literals (CTE-capable path)
+        values["ORIGINAL_QUERY_LITERAL"] = original.read_text(
+            encoding="utf-8").replace("'", "''")
+        values["OPTIMIZED_QUERY_LITERAL"] = rewrite_sql.replace("'", "''")
         values["NATURAL_KEY"] = args.natural_key or ""
         save_as = f"prescriptions/validation_v{n}.sql"
         expected = f"validation/v{n}_results.txt"
