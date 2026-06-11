@@ -37,7 +37,7 @@ tests/
 - Create: `src/queryreceipts/prescription.py`, `src/queryreceipts/packs/sqlserver/templates/diagnostics.sql.tmpl`
 - Test: `tests/test_prescription.py`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # tests/test_prescription.py
@@ -81,9 +81,9 @@ def test_issue_writes_prescription_and_ledger_event(tmp_path):
     assert issued[0]["prescription"] == "diagnostics"
 ```
 
-- [ ] **Step 2: Run to verify failure** — `pytest tests/test_prescription.py -q`, expected `ImportError`.
+- [x] **Step 2: Run to verify failure** — `pytest tests/test_prescription.py -q`, expected `ImportError`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `src/queryreceipts/packs/sqlserver/templates/diagnostics.sql.tmpl`:
 ```sql
@@ -174,8 +174,8 @@ def issue(case: Case, name: str, *, values: dict, save_as: str,
 
 Note: `templates/` needs no `__init__.py`; `resources.files` reads package data, and hatchling ships everything under `src/queryreceipts/`.
 
-- [ ] **Step 4: Run to verify pass** — `pytest tests/test_prescription.py -q`, `3 passed`.
-- [ ] **Step 5: Commit** — `git add -A && git commit -m "feat: prescriptions — rendered capture requests that refuse half-rendered SQL"`
+- [x] **Step 4: Run to verify pass** — `pytest tests/test_prescription.py -q`, `3 passed`.
+- [x] **Step 5: Commit** — `git add -A && git commit -m "feat: prescriptions — rendered capture requests that refuse half-rendered SQL"`
 
 ---
 
@@ -185,7 +185,7 @@ Note: `templates/` needs no `__init__.py`; `resources.files` reads package data,
 - Create: `src/queryreceipts/packs/sqlserver/templates/validation.sql.tmpl`
 - Test: `tests/test_prescription.py` (append)
 
-- [ ] **Step 1: Write the failing test** (append)
+- [x] **Step 1: Write the failing test** (append)
 
 ```python
 def test_validation_prescription_renders_gates_and_both_queries(tmp_path):
@@ -208,9 +208,9 @@ def test_validation_prescription_renders_gates_and_both_queries(tmp_path):
     assert "grain_per_natkey" in text
 ```
 
-- [ ] **Step 2: Run to verify failure** — expected `FileNotFoundError` (template missing).
+- [x] **Step 2: Run to verify failure** — expected `FileNotFoundError` (template missing).
 
-- [ ] **Step 3: Create the template** — the industrialized successor of sql-query-tuner's `validation.sql` (bidirectional EXCEPT authoritative, checksum labeled probabilistic, per-column null/distinct/minmaxsum via bracket-escaped dynamic SQL, bidirectional grain check), PLUS comparability gate rows echoed into the same results grid:
+- [x] **Step 3: Create the template** — the industrialized successor of sql-query-tuner's `validation.sql` (bidirectional EXCEPT authoritative, checksum labeled probabilistic, per-column null/distinct/minmaxsum via bracket-escaped dynamic SQL, bidirectional grain check), PLUS comparability gate rows echoed into the same results grid:
 
 ```sql
 /* receipts prescription: validation — equivalence proof, ORIGINAL vs OPTIMIZED
@@ -369,8 +369,8 @@ ORDER BY CASE status WHEN 'FAIL' THEN 0 WHEN 'PASS' THEN 1 ELSE 2 END,
          test_name;
 ```
 
-- [ ] **Step 4: Run to verify pass** — `pytest tests/test_prescription.py -q`, `4 passed`.
-- [ ] **Step 5: Commit** — `git add -A && git commit -m "feat(sqlserver): validation prescription — equivalence proof with comparability gates"`
+- [x] **Step 4: Run to verify pass** — `pytest tests/test_prescription.py -q`, `4 passed`.
+- [x] **Step 5: Commit** — `git add -A && git commit -m "feat(sqlserver): validation prescription — equivalence proof with comparability gates"`
 
 ---
 
@@ -381,7 +381,7 @@ ORDER BY CASE status WHEN 'FAIL' THEN 0 WHEN 'PASS' THEN 1 ELSE 2 END,
 - Modify: `src/queryreceipts/prescription.py` (protocol pinning for benchmarks)
 - Test: `tests/test_prescription.py` (append)
 
-- [ ] **Step 1: Write the failing test** (append)
+- [x] **Step 1: Write the failing test** (append)
 
 ```python
 def test_benchmark_prescription_pins_protocol_before_results(tmp_path):
@@ -398,9 +398,9 @@ def test_benchmark_prescription_pins_protocol_before_results(tmp_path):
     assert pinned[0]["runs_per_query"] == 2
 ```
 
-- [ ] **Step 2: Run to verify failure** — expected `FileNotFoundError` or missing event.
+- [x] **Step 2: Run to verify failure** — expected `FileNotFoundError` or missing event.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `benchmark.sql.tmpl`:
 ```sql
@@ -445,8 +445,8 @@ In `prescription.py`, after the `prescription_issued` append inside `issue()`, a
                              "cherry-picking is a FAIL"})
 ```
 
-- [ ] **Step 4: Run to verify pass** — `pytest tests/test_prescription.py -q`, `5 passed`.
-- [ ] **Step 5: Commit** — `git add -A && git commit -m "feat(sqlserver): benchmark prescription pins protocol before results exist"`
+- [x] **Step 4: Run to verify pass** — `pytest tests/test_prescription.py -q`, `5 passed`.
+- [x] **Step 5: Commit** — `git add -A && git commit -m "feat(sqlserver): benchmark prescription pins protocol before results exist"`
 
 ---
 
@@ -457,7 +457,7 @@ In `prescription.py`, after the `prescription_issued` append inside `issue()`, a
 - Create: `tests/fixtures/validation_results_pass.txt`, `tests/fixtures/validation_results_fail.txt`
 - Test: `tests/test_grading.py`
 
-- [ ] **Step 1: Create fixtures** (SSMS "Results to Text" shape: header, dashes, space-aligned columns)
+- [x] **Step 1: Create fixtures** (SSMS "Results to Text" shape: header, dashes, space-aligned columns)
 
 `tests/fixtures/validation_results_pass.txt`:
 ```
@@ -486,7 +486,7 @@ gate:quoted_identifier         INFO   1
 `row_count                      FAIL   old=66139 new=66024` and except_old_to_new reads
 `except_old_to_new              FAIL   115 rows missing in NEW`.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 ```python
 # tests/test_grading.py
@@ -519,9 +519,9 @@ def test_empty_or_garbled_capture_is_unverified():
     assert "no test rows" in g["reason"]
 ```
 
-- [ ] **Step 3: Run to verify failure** — `ImportError`.
+- [x] **Step 3: Run to verify failure** — `ImportError`.
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 ```python
 # src/queryreceipts/packs/sqlserver/grading.py
@@ -561,8 +561,8 @@ def grade_validation(text: str) -> dict:
                        "detail": r["detail"]} for r in tests]}
 ```
 
-- [ ] **Step 5: Run to verify pass** — `pytest tests/test_grading.py -q`, `3 passed`.
-- [ ] **Step 6: Commit** — `git add -A && git commit -m "feat(sqlserver): validation grading — PROVEN/REFUTED/UNVERIFIED"`
+- [x] **Step 5: Run to verify pass** — `pytest tests/test_grading.py -q`, `3 passed`.
+- [x] **Step 6: Commit** — `git add -A && git commit -m "feat(sqlserver): validation grading — PROVEN/REFUTED/UNVERIFIED"`
 
 ---
 
@@ -572,7 +572,7 @@ def grade_validation(text: str) -> dict:
 - Modify: `src/queryreceipts/packs/sqlserver/grading.py` (add `grade_benchmark`)
 - Test: `tests/test_grading.py` (append)
 
-- [ ] **Step 1: Write the failing tests** (append)
+- [x] **Step 1: Write the failing tests** (append)
 
 ```python
 def test_benchmark_grading_compares_sections():
@@ -605,9 +605,9 @@ def test_benchmark_grading_unverified_when_a_section_is_missing():
     assert "optimized" in g["reason"]
 ```
 
-- [ ] **Step 2: Run to verify failure** — `ImportError: grade_benchmark`.
+- [x] **Step 2: Run to verify failure** — `ImportError: grade_benchmark`.
 
-- [ ] **Step 3: Implement** (append to `grading.py`)
+- [x] **Step 3: Implement** (append to `grading.py`)
 
 ```python
 def grade_benchmark(text: str) -> dict:
@@ -642,8 +642,8 @@ def grade_benchmark(text: str) -> dict:
             }}
 ```
 
-- [ ] **Step 4: Run to verify pass** — `pytest tests/test_grading.py -q`, `5 passed`.
-- [ ] **Step 5: Commit** — `git add -A && git commit -m "feat(sqlserver): benchmark grading — section comparison, honest about missing halves"`
+- [x] **Step 4: Run to verify pass** — `pytest tests/test_grading.py -q`, `5 passed`.
+- [x] **Step 5: Commit** — `git add -A && git commit -m "feat(sqlserver): benchmark grading — section comparison, honest about missing halves"`
 
 ---
 
@@ -653,7 +653,7 @@ def grade_benchmark(text: str) -> dict:
 - Create: `src/queryreceipts/certificate.py`
 - Test: `tests/test_certificate.py`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # tests/test_certificate.py
@@ -737,9 +737,9 @@ def test_missing_benchmark_yields_unverified_with_named_gap(tmp_path):
     assert "benchmark" in cert["missing"][0]
 ```
 
-- [ ] **Step 2: Run to verify failure** — `ImportError`.
+- [x] **Step 2: Run to verify failure** — `ImportError`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```python
 # src/queryreceipts/certificate.py
@@ -868,8 +868,8 @@ def render_certificate(cert: dict) -> str:
     return "\n".join(lines) + "\n"
 ```
 
-- [ ] **Step 4: Run to verify pass** — `pytest tests/test_certificate.py -q`, `3 passed`.
-- [ ] **Step 5: Commit** — `git add -A && git commit -m "feat: certificates — three-valued, artifact-citing, condition-stamped"`
+- [x] **Step 4: Run to verify pass** — `pytest tests/test_certificate.py -q`, `3 passed`.
+- [x] **Step 5: Commit** — `git add -A && git commit -m "feat: certificates — three-valued, artifact-citing, condition-stamped"`
 
 ---
 
@@ -879,7 +879,7 @@ def render_certificate(cert: dict) -> str:
 - Modify: `src/queryreceipts/cli.py`
 - Test: `tests/test_cli.py` (append)
 
-- [ ] **Step 1: Write the failing test** (append)
+- [x] **Step 1: Write the failing test** (append)
 
 ```python
 def test_prescribe_grade_certify_loop(tmp_path, capsys):
@@ -919,9 +919,9 @@ def test_prescribe_grade_certify_loop(tmp_path, capsys):
     assert "benchmark" in out
 ```
 
-- [ ] **Step 2: Run to verify failure** — argparse error (unknown command).
+- [x] **Step 2: Run to verify failure** — argparse error (unknown command).
 
-- [ ] **Step 3: Implement** — add to `cli.py`:
+- [x] **Step 3: Implement** — add to `cli.py`:
 
 ```python
 def cmd_prescribe(args) -> int:
@@ -1027,15 +1027,15 @@ Registrations in `build_parser()`:
     sp.set_defaults(func=cmd_certify)
 ```
 
-- [ ] **Step 4: Run to verify pass** — `pytest -q`, all green.
-- [ ] **Step 5: Commit** — `git add -A && git commit -m "feat: prescribe/grade/certify — the proof loop in the CLI"`
+- [x] **Step 4: Run to verify pass** — `pytest -q`, all green.
+- [x] **Step 5: Commit** — `git add -A && git commit -m "feat: prescribe/grade/certify — the proof loop in the CLI"`
 
 ---
 
 ### Task 8: Wrap-up
 
-- [ ] **Step 1:** Full suite: `.venv/bin/python -m pytest -q` — all pass. Smoke: `receipts --help` shows all 8 subcommands.
-- [ ] **Step 2:** Tick all checkboxes in this plan, commit `chore: plan 2 complete — proof loop`.
+- [x] **Step 1:** Full suite: `.venv/bin/python -m pytest -q` — all pass. Smoke: `receipts --help` shows all 8 subcommands.
+- [x] **Step 2:** Tick all checkboxes in this plan, commit `chore: plan 2 complete — proof loop`.
 
 ---
 
