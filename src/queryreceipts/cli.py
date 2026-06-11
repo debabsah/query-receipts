@@ -22,6 +22,8 @@ def cmd_init(args) -> int:
     root = Path(args.path)
     meta = {"case": root.name, "engine": args.engine,
             "database": args.database, "symptom": args.symptom}
+    if args.runner_cmd:
+        meta["runner_cmd"] = args.runner_cmd
     case = Case.init(root, meta)
     print(f"opened case {case.meta['case']} at {case.root}")
     return 0
@@ -142,6 +144,61 @@ def cmd_prescribe(args) -> int:
     return 0
 
 
+def cmd_run(args) -> int:
+    """Driver transport: execute a rendered prescription via the configured
+    runner command and auto-register the capture. The full command never
+    enters the ledger (it may contain secrets) — only its first token."""
+    import shlex
+    import subprocess
+    from .case import utcnow
+    from .packs import get_pack
+    case = _find_case(args)
+    runner = args.runner_cmd or case.meta.get("runner_cmd")
+    if not runner:
+        raise CaseError("no runner command: pass --runner-cmd or set it "
+                        "with init --runner-cmd (driver transport)")
+    if "{sql}" not in runner:
+        raise CaseError("runner command must contain a {sql} placeholder")
+    target = Path(args.prescription)
+    if not target.is_absolute():
+        target = case.root / target
+    try:
+        rel = target.resolve().relative_to(case.root.resolve()).as_posix()
+    except ValueError:
+        raise CaseError(
+            f"{target} is not inside the case directory") from None
+    event = next((e for e in reversed(case.events())
+                  if e["event"] == "prescription_issued"
+                  and e["rendered_to"] == rel), None)
+    if event is None:
+        raise CaseError(f"{rel} is not a rendered prescription in this case")
+    cmd = runner.replace("{sql}", shlex.quote(str(target)))
+    proc = subprocess.run(["sh", "-c", cmd], capture_output=True,
+                          text=True, timeout=args.timeout)
+    capture = case.root / event["expected_capture"]
+    capture.parent.mkdir(parents=True, exist_ok=True)
+    out = proc.stdout + (("\n" + proc.stderr) if proc.stderr.strip() else "")
+    capture.write_text(out, encoding="utf-8")
+    pack = get_pack(case.meta.get("engine", "sqlserver"))
+    kind = {"diagnostics": pack["diagnostics_kind"],
+            "validation": "validation_results",
+            "benchmark": "benchmark_results"}.get(
+                event["prescription"], "other")
+    ev = case.register_evidence(
+        capture, kind=kind, transport="driver",
+        environment=args.environment, runner=runner.split()[0],
+        captured_at=utcnow(),
+        notes=f"receipts run, exit {proc.returncode}")
+    print(f"ran {rel} -> {event['expected_capture']} "
+          f"(exit {proc.returncode}); registered {ev.artifact_id}")
+    if proc.returncode != 0:
+        print(f"receipts: runner exited {proc.returncode}; capture "
+              "registered anyway — grade it to see what happened",
+              file=sys.stderr)
+        return 1
+    return 0
+
+
 def cmd_grade(args) -> int:
     from .packs import get_pack
     case = _find_case(args)
@@ -194,7 +251,20 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--engine", required=True)
     sp.add_argument("--database", required=True)
     sp.add_argument("--symptom", required=True)
+    sp.add_argument("--runner-cmd", default=None, dest="runner_cmd",
+                    help="default driver-transport command; must contain "
+                         "{sql}. Do not embed secrets — use env/.pgpass.")
     sp.set_defaults(func=cmd_init)
+
+    sp = sub.add_parser(
+        "run", help="execute a rendered prescription via the runner command "
+                    "(driver transport) and register the capture")
+    sp.add_argument("prescription", help="path to the rendered .sql")
+    sp.add_argument("--runner-cmd", default=None, dest="runner_cmd")
+    sp.add_argument("--environment", required=True)
+    sp.add_argument("--timeout", type=int, default=600)
+    sp.add_argument("--case", default=None)
+    sp.set_defaults(func=cmd_run)
 
     sp = sub.add_parser("add", help="register a capture as evidence")
     sp.add_argument("file")

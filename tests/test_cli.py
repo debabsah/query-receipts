@@ -102,6 +102,40 @@ def test_prescribe_grade_certify_loop(tmp_path, capsys):
     assert "benchmark" in out
 
 
+def test_run_executes_prescription_and_registers_driver_evidence(
+        tmp_path, capsys):
+    root = tmp_path / "c"
+    main(["init", str(root), "--engine", "sqlserver", "--database", "S",
+          "--symptom", "x", "--runner-cmd",
+          "cat {sql} >/dev/null; "
+          "printf \"Table 'T'. Scan count 9, logical reads 77\""])
+    (root / "original.sql").write_text("SELECT 1 AS x", encoding="utf-8")
+    main(["prescribe", "diagnostics", "--case", str(root)])
+    rc = main(["run", "prescriptions/diagnostics.sql",
+               "--environment", "synthetic", "--case", str(root)])
+    assert rc == 0
+    cap = root / "runs" / "baseline" / "diagnostics.txt"
+    assert "logical reads 77" in cap.read_text(encoding="utf-8")
+    from queryreceipts.case import Case
+    ev = Case.find(root).get_evidence("ev-0001")
+    assert ev.transport == "driver"
+    assert ev.kind == "stats_io"
+    assert ev.runner == "cat"  # first token only — commands may hold secrets
+    assert "printf" not in (root / "ledger.jsonl").read_text(
+        encoding="utf-8")
+
+
+def test_run_refuses_files_that_are_not_prescriptions(tmp_path, capsys):
+    root = tmp_path / "c"
+    main(["init", str(root), "--engine", "sqlserver", "--database", "S",
+          "--symptom", "x", "--runner-cmd", "cat {sql}"])
+    (root / "random.sql").write_text("SELECT 1", encoding="utf-8")
+    rc = main(["run", "random.sql", "--environment", "synthetic",
+               "--case", str(root)])
+    assert rc == 1
+    assert "not a rendered prescription" in capsys.readouterr().err
+
+
 def test_prescribe_validation_escapes_quotes_into_literals(tmp_path, capsys):
     root = tmp_path / "c"
     main(["init", str(root), "--engine", "sqlserver",
