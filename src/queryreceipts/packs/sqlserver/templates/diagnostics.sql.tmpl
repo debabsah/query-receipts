@@ -1,0 +1,16 @@
+/* receipts prescription: diagnostics (baseline IO/TIME capture)
+   Run in SSMS, Results to Text (Ctrl+T). Save the ENTIRE output to:
+   {{EXPECTED_CAPTURE}}
+*/
+USE [{{DB_NAME}}];
+SET NOCOUNT ON;
+
+PRINT '====BEGIN_SECTION:baseline_io_time====';
+SET STATISTICS IO ON;
+SET STATISTICS TIME ON;
+
+-- ===INJECT_ORIGINAL_QUERY===
+
+SET STATISTICS TIME OFF;
+SET STATISTICS IO OFF;
+PRINT '====END_SECTION:baseline_io_time====';
