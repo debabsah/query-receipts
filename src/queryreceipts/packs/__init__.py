@@ -1,12 +1,13 @@
 """Engine packs. Dispatch: evidence kind -> (parse, render)."""
 from __future__ import annotations
 
-from .sqlserver import stats_io
+from .sqlserver import planxml, stats_io
 
 
 def get_parser(kind: str):
     table = {
         "stats_io": (stats_io.parse, stats_io.render),
+        "plan_xml": (planxml.parse_and_analyze, planxml.render),
     }
     if kind not in table:
         raise KeyError(

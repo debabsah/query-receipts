@@ -132,3 +132,64 @@ def _build_operators(qp: ET.Element) -> list[dict]:
             "warnings": warnings,
         })
     return ops
+
+
+def analyze(plan: dict) -> dict:
+    """Derive the tuner-facing report from a parsed plan."""
+    statements = []
+    for s in plan["statements"]:
+        skew = []
+        for o in s["operators"]:
+            if o["actual_rows"] is None or o["est_rows"] <= 0:
+                continue
+            ratio = max(o["actual_rows"], 1) / max(o["est_rows"], 1)
+            ratio = round(max(ratio, 1 / ratio), 1)  # symmetric: under or over
+            if ratio >= 10:
+                skew.append({"node_id": o["node_id"],
+                             "op": o["physical_op"],
+                             "est_rows": o["est_rows"],
+                             "actual_rows": o["actual_rows"],
+                             "ratio": ratio})
+        skew.sort(key=lambda x: x["ratio"], reverse=True)
+        plan_warnings = sorted({w for o in s["operators"]
+                                for w in o["warnings"]})
+        top_ops = sorted(s["operators"],
+                         key=lambda o: o["est_self_cost"], reverse=True)[:5]
+        statements.append({**s, "skew": skew[:5],
+                           "plan_warnings": plan_warnings,
+                           "top_self_cost_ops": top_ops})
+    return {"statements": statements}
+
+
+def parse_and_analyze(text: str) -> dict:
+    return analyze(parse_plan(text))
+
+
+def render(report: dict) -> str:
+    lines = []
+    for s in report["statements"]:
+        lines.append(f"stmt {s['statement_id']} [{s['statement_type']}] "
+                     f"cost={s['cost']} est_rows={s['est_rows']:,.0f} "
+                     f"| {s['text'][:80]}")
+        if s["memory_grant_kb"] is not None:
+            lines.append(f"  memory grant: {s['memory_grant_kb']:,} KB")
+        if any(p["compiled_value_present"] for p in s["parameters"]):
+            names = [p["name"] for p in s["parameters"]]
+            lines.append(
+                f"  compiled parameter values present ({', '.join(names)}) "
+                "— treat plan file as sensitive")
+        for w in s["plan_warnings"]:
+            lines.append(f"  WARNING: {w}")
+        for k in s["skew"]:
+            lines.append(f"  skew {k['ratio']}x node {k['node_id']} "
+                         f"{k['op']}: est {k['est_rows']:,.0f} vs "
+                         f"actual {k['actual_rows']:,}")
+        for o in s["top_self_cost_ops"][:3]:
+            obj = f" -> {o['object']}" if o["object"] else ""
+            lines.append(f"  op node {o['node_id']} {o['physical_op']} "
+                         f"self-cost {o['est_self_cost']:.1f}{obj}")
+        for mi in s["missing_indexes"]:
+            lines.append(f"  missing index: {mi['table']} "
+                         f"EQ={mi['equality']} INEQ={mi['inequality']} "
+                         f"INC={mi['included']}")
+    return "\n".join(lines) + "\n"
