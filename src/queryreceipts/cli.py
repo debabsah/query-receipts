@@ -315,6 +315,12 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(func=cmd_certify)
 
+    sp = sub.add_parser("mcp-serve",
+                        help="serve the receipts toolset as a stdio MCP "
+                             "server (MCP transport)")
+    sp.set_defaults(func=lambda args: __import__(
+        "queryreceipts.mcp_server", fromlist=["serve"]).serve())
+
     sp = sub.add_parser("status", help="show case state")
     sp.add_argument("--case", default=None)
     sp.add_argument("--json", action="store_true")
