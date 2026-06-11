@@ -23,3 +23,5 @@ packages = ["src/queryreceipts"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = ["integration: drives the fleetdb docker container"]
+addopts = "-m 'not integration'"
