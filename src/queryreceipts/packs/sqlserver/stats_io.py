@@ -85,3 +85,25 @@ def parse(text: str) -> dict:
         },
         "warnings": WARNING_RE.findall(text),
     }
+
+
+def render(parsed: dict) -> str:
+    t = parsed["time"]
+    c = parsed["compile"]
+    lines = [
+        f"elapsed {t['elapsed_ms']:,} ms | cpu {t['cpu_ms']:,} ms "
+        f"| {t['statements']} timed statement(s) "
+        f"| compile {c['cpu_ms']:,} ms cpu",
+    ]
+    if parsed["warnings"]:
+        lines.append(f"warnings: {len(parsed['warnings'])} "
+                     f"(first: {parsed['warnings'][0]})")
+    lines.append("rank | table | logical_reads | scans | stmts | lob_reads")
+    for i, r in enumerate(parsed["tables"][:15], 1):
+        lines.append(
+            f"{i} | {r['table']} | {r['logical_reads']:,} | "
+            f"{r['scan_count']:,} | {r['statements']} | "
+            f"{r['lob_logical_reads']:,}")
+    if len(parsed["tables"]) > 15:
+        lines.append(f"… {len(parsed['tables']) - 15} more tables omitted")
+    return "\n".join(lines) + "\n"

@@ -53,6 +53,28 @@ def cmd_status(args) -> int:
     return 0
 
 
+def cmd_parse(args) -> int:
+    from .packs import get_parser
+    from .packs.sqlserver.stats_io import extract_section
+    case = _find_case(args)
+    ev = case.get_evidence(args.artifact)
+    parse_fn, render_fn = get_parser(ev.kind)
+    text = (case.root / ev.path).read_text(encoding="utf-8", errors="replace")
+    if args.section:
+        if ev.kind != "stats_io":
+            raise CaseError(
+                f"--section applies to text captures, not {ev.kind}")
+        text = extract_section(text, args.section)
+    parsed = parse_fn(text)
+    case.append({"event": "summary_derived", "source": ev.artifact_id,
+                 "kind": ev.kind, "section": args.section or ""})
+    if args.json:
+        print(json.dumps(parsed, indent=2))
+    else:
+        print(render_fn(parsed), end="")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="receipts")
     sub = p.add_subparsers(dest="command", required=True)
@@ -74,6 +96,14 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--notes", default="")
     sp.add_argument("--case", default=None)
     sp.set_defaults(func=cmd_add)
+
+    sp = sub.add_parser("parse",
+                        help="parse registered evidence into a summary")
+    sp.add_argument("artifact", help="artifact id, e.g. ev-0001")
+    sp.add_argument("--section", default=None)
+    sp.add_argument("--case", default=None)
+    sp.add_argument("--json", action="store_true")
+    sp.set_defaults(func=cmd_parse)
 
     sp = sub.add_parser("status", help="show case state")
     sp.add_argument("--case", default=None)
