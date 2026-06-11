@@ -1,0 +1,155 @@
+/* receipts prescription: validation — equivalence proof, ORIGINAL vs OPTIMIZED
+   Both queries materialize in THIS session (same SET context by construction);
+   gate rows record the context so the certificate can cite it.
+   Run in SSMS; save the final result grid to: {{EXPECTED_CAPTURE}}
+   Output columns: test_name, status, detail.
+   status vocabulary: PASS / FAIL for tests, INFO for gates.
+*/
+USE [{{DB_NAME}}];
+SET NOCOUNT ON;
+
+IF OBJECT_ID('tempdb..#OldResult')   IS NOT NULL DROP TABLE #OldResult;
+SELECT * INTO #OldResult FROM (
+-- ===INJECT_ORIGINAL_QUERY===
+) AS _o;
+
+IF OBJECT_ID('tempdb..#NewResult')   IS NOT NULL DROP TABLE #NewResult;
+SELECT * INTO #NewResult FROM (
+-- ===INJECT_OPTIMIZED_QUERY===
+) AS _n;
+
+IF OBJECT_ID('tempdb..#TestResults') IS NOT NULL DROP TABLE #TestResults;
+CREATE TABLE #TestResults (
+    test_name NVARCHAR(200), status CHAR(4), detail NVARCHAR(2000));
+
+/* ----- comparability gates (INFO rows) ----- */
+INSERT #TestResults VALUES ('gate:engine_version', 'INFO',
+    CONVERT(NVARCHAR(200), SERVERPROPERTY('ProductVersion')));
+INSERT #TestResults VALUES ('gate:database', 'INFO', DB_NAME());
+INSERT #TestResults VALUES ('gate:ansi_nulls', 'INFO',
+    CONVERT(NVARCHAR(10), SESSIONPROPERTY('ANSI_NULLS')));
+INSERT #TestResults VALUES ('gate:quoted_identifier', 'INFO',
+    CONVERT(NVARCHAR(10), SESSIONPROPERTY('QUOTED_IDENTIFIER')));
+INSERT #TestResults VALUES ('gate:language', 'INFO', @@LANGUAGE);
+INSERT #TestResults VALUES ('gate:datefirst', 'INFO',
+    CONVERT(NVARCHAR(10), @@DATEFIRST));
+
+/* ----- test 1: row_count ----- */
+DECLARE @oc INT, @nc INT;
+SELECT @oc = COUNT(*) FROM #OldResult;
+SELECT @nc = COUNT(*) FROM #NewResult;
+INSERT #TestResults VALUES ('row_count',
+    CASE WHEN @oc = @nc THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('old=', @oc, ' new=', @nc));
+
+/* ----- test 2: checksum_agg (probabilistic indicator only) ----- */
+DECLARE @oh BIGINT, @nh BIGINT;
+SELECT @oh = CHECKSUM_AGG(BINARY_CHECKSUM(*)) FROM #OldResult;
+SELECT @nh = CHECKSUM_AGG(BINARY_CHECKSUM(*)) FROM #NewResult;
+INSERT #TestResults VALUES ('checksum_agg',
+    CASE WHEN @oh = @nh THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT('old=', @oh, ' new=', @nh,
+           ' (probabilistic; EXCEPT is authoritative)'));
+
+/* ----- tests 3+4: bidirectional EXCEPT (authoritative) ----- */
+DECLARE @om INT, @nm INT;
+SELECT @om = COUNT(*) FROM
+    (SELECT * FROM #OldResult EXCEPT SELECT * FROM #NewResult) o;
+SELECT @nm = COUNT(*) FROM
+    (SELECT * FROM #NewResult EXCEPT SELECT * FROM #OldResult) n;
+INSERT #TestResults VALUES ('except_old_to_new',
+    CASE WHEN @om = 0 THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT(@om, ' rows missing in NEW'));
+INSERT #TestResults VALUES ('except_new_to_old',
+    CASE WHEN @nm = 0 THEN 'PASS' ELSE 'FAIL' END,
+    CONCAT(@nm, ' extra rows in NEW'));
+
+/* ----- tests 5/6/7: per-column null_dist / distinct_count / minmaxsum ----- */
+DECLARE @col SYSNAME, @col_b NVARCHAR(258), @sql NVARCHAR(MAX), @typ SYSNAME;
+DECLARE col_cur CURSOR LOCAL FAST_FORWARD FOR
+SELECT c.name, ty.name
+FROM tempdb.sys.columns c
+INNER JOIN tempdb.sys.types ty ON ty.user_type_id = c.user_type_id
+WHERE c.object_id = OBJECT_ID('tempdb..#OldResult');
+OPEN col_cur;
+FETCH NEXT FROM col_cur INTO @col, @typ;
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    SET @col_b = N'[' + REPLACE(@col, N']', N']]') + N']';
+    SET @sql = N'
+        DECLARE @on INT, @nn INT;
+        SELECT @on = SUM(CASE WHEN ' + @col_b + N' IS NULL THEN 1 ELSE 0 END) FROM #OldResult;
+        SELECT @nn = SUM(CASE WHEN ' + @col_b + N' IS NULL THEN 1 ELSE 0 END) FROM #NewResult;
+        INSERT #TestResults VALUES (
+            ''null_dist:' + REPLACE(@col, N'''', N'''''') + N''',
+            CASE WHEN ISNULL(@on,0) = ISNULL(@nn,0) THEN ''PASS'' ELSE ''FAIL'' END,
+            CONCAT(''old='', ISNULL(@on,0), '' new='', ISNULL(@nn,0)));';
+    EXEC sp_executesql @sql;
+    SET @sql = N'
+        DECLARE @od INT, @nd INT;
+        SELECT @od = COUNT(DISTINCT ' + @col_b + N') FROM #OldResult;
+        SELECT @nd = COUNT(DISTINCT ' + @col_b + N') FROM #NewResult;
+        INSERT #TestResults VALUES (
+            ''distinct_count:' + REPLACE(@col, N'''', N'''''') + N''',
+            CASE WHEN @od = @nd THEN ''PASS'' ELSE ''FAIL'' END,
+            CONCAT(''old='', @od, '' new='', @nd));';
+    EXEC sp_executesql @sql;
+    IF @typ IN (N'int', N'bigint', N'smallint', N'tinyint', N'decimal',
+                N'numeric', N'float', N'real', N'money', N'smallmoney')
+    BEGIN
+        SET @sql = N'
+            DECLARE @omin SQL_VARIANT, @omax SQL_VARIANT, @osum SQL_VARIANT;
+            DECLARE @nmin SQL_VARIANT, @nmax SQL_VARIANT, @nsum SQL_VARIANT;
+            SELECT @omin = MIN(' + @col_b + N'), @omax = MAX(' + @col_b + N'),
+                   @osum = SUM(TRY_CAST(' + @col_b + N' AS DECIMAL(38,4))) FROM #OldResult;
+            SELECT @nmin = MIN(' + @col_b + N'), @nmax = MAX(' + @col_b + N'),
+                   @nsum = SUM(TRY_CAST(' + @col_b + N' AS DECIMAL(38,4))) FROM #NewResult;
+            INSERT #TestResults VALUES (
+                ''minmaxsum:' + REPLACE(@col, N'''', N'''''') + N''',
+                CASE WHEN ISNULL(CAST(@omin AS NVARCHAR(50)),'''') = ISNULL(CAST(@nmin AS NVARCHAR(50)),'''')
+                      AND ISNULL(CAST(@omax AS NVARCHAR(50)),'''') = ISNULL(CAST(@nmax AS NVARCHAR(50)),'''')
+                      AND ISNULL(CAST(@osum AS NVARCHAR(50)),'''') = ISNULL(CAST(@nsum AS NVARCHAR(50)),'''')
+                     THEN ''PASS'' ELSE ''FAIL'' END,
+                CONCAT(''old='', CAST(@omin AS NVARCHAR(50)), ''/'', CAST(@omax AS NVARCHAR(50)), ''/'', CAST(@osum AS NVARCHAR(50)),
+                       '' new='', CAST(@nmin AS NVARCHAR(50)), ''/'', CAST(@nmax AS NVARCHAR(50)), ''/'', CAST(@nsum AS NVARCHAR(50))));';
+        EXEC sp_executesql @sql;
+    END
+    FETCH NEXT FROM col_cur INTO @col, @typ;
+END
+CLOSE col_cur; DEALLOCATE col_cur;
+
+/* ----- tests 8+9: natural-key duplicates + bidirectional grain strata ----- */
+DECLARE @nk SYSNAME = N'{{NATURAL_KEY}}';
+IF @nk IS NOT NULL AND @nk <> N''
+BEGIN
+    DECLARE @nk_b NVARCHAR(258) = N'[' + REPLACE(@nk, N']', N']]') + N']';
+    SET @sql = N'
+        DECLARE @od INT, @nd INT;
+        SELECT @od = COUNT(*) - COUNT(DISTINCT ' + @nk_b + N') FROM #OldResult;
+        SELECT @nd = COUNT(*) - COUNT(DISTINCT ' + @nk_b + N') FROM #NewResult;
+        INSERT #TestResults VALUES (''dup_on_natkey'',
+            CASE WHEN @od = @nd THEN ''PASS'' ELSE ''FAIL'' END,
+            CONCAT(''old_dups='', @od, '' new_dups='', @nd));';
+    EXEC sp_executesql @sql;
+    SET @sql = N'
+        DECLARE @miss INT, @extra INT;
+        SELECT @miss = COUNT(*) FROM (
+            SELECT ' + @nk_b + N' AS k, COUNT(*) AS c FROM #OldResult GROUP BY ' + @nk_b + N'
+            EXCEPT
+            SELECT ' + @nk_b + N' AS k, COUNT(*) AS c FROM #NewResult GROUP BY ' + @nk_b + N') x;
+        SELECT @extra = COUNT(*) FROM (
+            SELECT ' + @nk_b + N' AS k, COUNT(*) AS c FROM #NewResult GROUP BY ' + @nk_b + N'
+            EXCEPT
+            SELECT ' + @nk_b + N' AS k, COUNT(*) AS c FROM #OldResult GROUP BY ' + @nk_b + N') y;
+        INSERT #TestResults VALUES (''grain_per_natkey'',
+            CASE WHEN @miss = 0 AND @extra = 0 THEN ''PASS'' ELSE ''FAIL'' END,
+            CONCAT(@miss, '' strata missing in NEW, '', @extra, '' strata extra in NEW''));';
+    EXEC sp_executesql @sql;
+END
+ELSE
+    INSERT #TestResults VALUES ('grain_per_natkey', 'INFO',
+        'skipped: no natural key provided');
+
+SELECT test_name, status, detail FROM #TestResults
+ORDER BY CASE status WHEN 'FAIL' THEN 0 WHEN 'PASS' THEN 1 ELSE 2 END,
+         test_name;

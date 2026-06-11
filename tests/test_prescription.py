@@ -37,3 +37,23 @@ def test_issue_writes_prescription_and_ledger_event(tmp_path):
               if e["event"] == "prescription_issued"]
     assert issued[0]["expected_capture"] == "runs/baseline/diagnostics.txt"
     assert issued[0]["prescription"] == "diagnostics"
+
+
+def test_validation_prescription_renders_gates_and_both_queries(tmp_path):
+    case = Case.init(tmp_path / "c", META)
+    (case.root / "original.sql").write_text("SELECT 1 AS x",
+                                            encoding="utf-8")
+    rw = case.root / "optimized" / "optimized_v1.sql"
+    rw.parent.mkdir(parents=True)
+    rw.write_text("SELECT 1 AS x /* faster */", encoding="utf-8")
+    p = issue(case, "validation",
+              values={"NATURAL_KEY": "x"},
+              save_as="prescriptions/validation_v1.sql",
+              expected_capture="validation/v1_results.txt",
+              injections={"INJECT_OPTIMIZED_QUERY":
+                          rw.read_text(encoding="utf-8")})
+    text = p.read_text(encoding="utf-8")
+    assert "gate:engine_version" in text
+    assert "SELECT 1 AS x /* faster */" in text
+    assert "EXCEPT" in text
+    assert "grain_per_natkey" in text
