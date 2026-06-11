@@ -99,6 +99,26 @@ python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'
 Engine code is stdlib-only by policy: a proof tool should carry zero
 supply-chain surface. pytest is the only dev dependency.
 
+Integration tests drive the full cure loop against a live SQL Server 2022
+container (FleetDB, a deterministic synthetic workload mirroring a real
+production pathology):
+
+```bash
+bash scripts/fleetdb_up.sh        # needs Docker; first run takes minutes
+.venv/bin/python -m pytest -m integration
+bash scripts/fleetdb_down.sh
+```
+
+## Known limitations (tracked, not hidden)
+
+- Validation materializes queries via a derived-table wrapper, so a rewrite
+  whose outermost statement is a CTE (`WITH …`) cannot be validated yet —
+  the grader correctly returns UNVERIFIED rather than guessing. General
+  materialization (INSERT…EXEC + `dm_exec_describe_first_result_set`) is
+  planned.
+- Single-statement SELECT workloads only; stored procs and DML-ETL
+  validation are future work.
+
 ## Lineage
 
 Conceived 2026-06-11 from a first-principles review of the `sql-query-tuner`

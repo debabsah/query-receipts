@@ -22,7 +22,7 @@
 **Files:**
 - Create: `examples/fleetdb/schema.sql`, `examples/fleetdb/datagen.sql`, `examples/fleetdb/original.sql`, `examples/fleetdb/optimized_v1.sql`
 
-- [ ] **Step 1: schema.sql**
+- [x] **Step 1: schema.sql**
 
 ```sql
 IF DB_ID('FleetDB') IS NULL CREATE DATABASE FleetDB;
@@ -60,7 +60,7 @@ GO
 
 (Deliberately NO index on RESERVATION_ITEM(RES_ID) and none on TRAVELER(RES_ID) — that's the pathology.)
 
-- [ ] **Step 2: datagen.sql** (deterministic, set-based)
+- [x] **Step 2: datagen.sql** (deterministic, set-based)
 
 ```sql
 USE FleetDB;
@@ -89,7 +89,7 @@ FROM GENERATE_SERIES(1, 400000) s;
 GO
 ```
 
-- [ ] **Step 3: original.sql** (the slow query — output grain RES_ID)
+- [x] **Step 3: original.sql** (the slow query — output grain RES_ID)
 
 ```sql
 SELECT r.RES_ID,
@@ -105,7 +105,7 @@ FROM dbo.RESERVATION r
 WHERE YEAR(r.START_DATE) = 2025
 ```
 
-- [ ] **Step 4: optimized_v1.sql** (equivalent, sargable, set-based)
+- [x] **Step 4: optimized_v1.sql** (equivalent, sargable, set-based)
 
 ```sql
 WITH latest AS (
@@ -131,7 +131,7 @@ WHERE r.START_DATE >= '2025-01-01' AND r.START_DATE < '2026-01-01'
 
 Equivalence note: original's correlated TOP 1 returns NULL when a reservation has no items (cannot happen — datagen gives every reservation 3 items — but LEFT JOIN preserves the same semantics anyway); `ISNULL(…, 0)` matches COUNT's 0-for-no-rows. `YEAR(d)=2025` ⇔ the half-open range.
 
-- [ ] **Step 5: Commit** — `git add examples && git commit -m "feat: FleetDB synthetic workload — deterministic, pathological, equivalent pair"`
+- [x] **Step 5: Commit** — `git add examples && git commit -m "feat: FleetDB synthetic workload — deterministic, pathological, equivalent pair"`
 
 ---
 
@@ -140,7 +140,7 @@ Equivalence note: original's correlated TOP 1 returns NULL when a reservation ha
 **Files:**
 - Create: `scripts/fleetdb_up.sh`, `scripts/fleetdb_down.sh`
 
-- [ ] **Step 1: fleetdb_up.sh**
+- [x] **Step 1: fleetdb_up.sh**
 
 ```bash
 #!/usr/bin/env bash
@@ -174,14 +174,14 @@ done
 echo "FleetDB ready on localhost,14333 (sa / $PASS)"
 ```
 
-- [ ] **Step 2: fleetdb_down.sh**
+- [x] **Step 2: fleetdb_down.sh**
 
 ```bash
 #!/usr/bin/env bash
 docker rm -f fleetdb 2>/dev/null && echo "fleetdb removed" || echo "fleetdb was not running"
 ```
 
-- [ ] **Step 3:** `chmod +x scripts/*.sh`, commit — `git commit -m "feat: fleetdb container lifecycle scripts"`
+- [x] **Step 3:** `chmod +x scripts/*.sh`, commit — `git commit -m "feat: fleetdb container lifecycle scripts"`
 
 ---
 
@@ -191,7 +191,7 @@ docker rm -f fleetdb 2>/dev/null && echo "fleetdb removed" || echo "fleetdb was 
 - Create: `tests/integration/__init__.py` (empty), `tests/integration/conftest.py`
 - Modify: `pyproject.toml` (marker + default deselect)
 
-- [ ] **Step 1: pyproject.toml additions**
+- [x] **Step 1: pyproject.toml additions**
 
 ```toml
 [tool.pytest.ini_options]
@@ -202,7 +202,7 @@ addopts = "-m 'not integration'"
 
 (Run integration explicitly: `pytest -m integration`.)
 
-- [ ] **Step 2: conftest.py**
+- [x] **Step 2: conftest.py**
 
 ```python
 # tests/integration/conftest.py
@@ -247,7 +247,7 @@ def run_sql(sql_path, out_path=None, timeout=600):
     return r.stdout
 ```
 
-- [ ] **Step 3:** Unit suite still green (`pytest -q`), commit — `git commit -m "feat: integration harness — fleetdb fixture, marker, sqlcmd runner"`
+- [x] **Step 3:** Unit suite still green (`pytest -q`), commit — `git commit -m "feat: integration harness — fleetdb fixture, marker, sqlcmd runner"`
 
 ---
 
@@ -256,7 +256,7 @@ def run_sql(sql_path, out_path=None, timeout=600):
 **Files:**
 - Create: `tests/integration/test_e2e_cure_loop.py`
 
-- [ ] **Step 1: Write the test** (this is the product's acceptance test)
+- [x] **Step 1: Write the test** (this is the product's acceptance test)
 
 ```python
 # tests/integration/test_e2e_cure_loop.py
@@ -334,17 +334,17 @@ def test_full_cure_loop_yields_proven_certificate(fleetdb, tmp_path, capsys):
     assert cert["gates"]["gate:database"] == "FleetDB"
 ```
 
-- [ ] **Step 2: Bring the workload up** — `bash scripts/fleetdb_up.sh` (first datagen run takes minutes under emulation).
+- [x] **Step 2: Bring the workload up** — `bash scripts/fleetdb_up.sh` (first datagen run takes minutes under emulation).
 
-- [ ] **Step 3: Run it** — `.venv/bin/python -m pytest -m integration -v`. Debug what reality breaks (sqlcmd output formats, timing) by reading the case dir artifacts; fix product code or harness as evidence dictates, keeping unit suite green.
+- [x] **Step 3: Run it** — `.venv/bin/python -m pytest -m integration -v`. Debug what reality breaks (sqlcmd output formats, timing) by reading the case dir artifacts; fix product code or harness as evidence dictates, keeping unit suite green.
 
-- [ ] **Step 4: Commit** — `git commit -m "feat: e2e cure loop against live SQL Server — PROVEN certificate"`
+- [x] **Step 4: Commit** — `git commit -m "feat: e2e cure loop against live SQL Server — PROVEN certificate"`
 
 ---
 
 ### Task 5: Wrap-up
 
-- [ ] Full unit suite green; e2e green; tick checkboxes; update README Development section with the integration-test workflow; commit `chore: plan 3 complete`.
+- [x] Full unit suite green; e2e green; tick checkboxes; update README Development section with the integration-test workflow; commit `chore: plan 3 complete`.
 
 ---
 
