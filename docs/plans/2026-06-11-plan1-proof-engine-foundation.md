@@ -52,7 +52,7 @@ query-receipts/
 **Files:**
 - Create: `pyproject.toml`, `LICENSE`, `.gitignore`, `src/queryreceipts/__init__.py`, `tests/test_package.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/test_package.py
@@ -63,12 +63,12 @@ def test_version_is_a_string():
     assert isinstance(queryreceipts.__version__, str)
 ```
 
-- [ ] **Step 2: Run it to verify failure**
+- [x] **Step 2: Run it to verify failure**
 
 Run: `python3 -m pytest tests/test_package.py -q` (from repo root)
 Expected: FAIL/ERROR with `ModuleNotFoundError: No module named 'queryreceipts'`
 
-- [ ] **Step 3: Create the scaffold**
+- [x] **Step 3: Create the scaffold**
 
 `pyproject.toml`:
 ```toml
@@ -116,7 +116,7 @@ dist/
 .pytest_cache/
 ```
 
-- [ ] **Step 4: Install editable into a venv and verify test passes**
+- [x] **Step 4: Install editable into a venv and verify test passes**
 
 Run:
 ```bash
@@ -125,7 +125,7 @@ python3 -m venv .venv && .venv/bin/pip install -q -e '.[dev]'
 ```
 Expected: `1 passed`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add pyproject.toml LICENSE .gitignore src tests
@@ -140,7 +140,7 @@ git commit -m "feat: package scaffold (queryreceipts, stdlib-only, receipts entr
 - Create: `src/queryreceipts/evidence.py`
 - Test: `tests/test_evidence.py`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # tests/test_evidence.py
@@ -177,9 +177,9 @@ def test_validate_vocab_rejects_unknown_transport():
 
 NOTE: if the hard-coded sha256 in the first test is wrong, compute the true value with `python3 -c "import hashlib;print(hashlib.sha256(b'receipts\n').hexdigest())"` and fix the **test**, not the function.
 
-- [ ] **Step 2: Run to verify failure** — `pytest tests/test_evidence.py -q`, expected `ModuleNotFoundError`/`ImportError`.
+- [x] **Step 2: Run to verify failure** — `pytest tests/test_evidence.py -q`, expected `ModuleNotFoundError`/`ImportError`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```python
 # src/queryreceipts/evidence.py
@@ -244,9 +244,9 @@ class Evidence:
                       if k in cls.__dataclass_fields__})
 ```
 
-- [ ] **Step 4: Run to verify pass** — `pytest tests/test_evidence.py -q`, expected `3 passed`.
+- [x] **Step 4: Run to verify pass** — `pytest tests/test_evidence.py -q`, expected `3 passed`.
 
-- [ ] **Step 5: Commit** — `git add -A && git commit -m "feat: evidence artifacts with sha256 + provenance vocab"`
+- [x] **Step 5: Commit** — `git add -A && git commit -m "feat: evidence artifacts with sha256 + provenance vocab"`
 
 ---
 
@@ -256,7 +256,7 @@ class Evidence:
 - Create: `src/queryreceipts/case.py`
 - Test: `tests/test_case.py`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # tests/test_case.py
@@ -307,9 +307,9 @@ def test_append_assigns_monotonic_seq(tmp_path):
     assert seqs == [1, 2, 3]
 ```
 
-- [ ] **Step 2: Run to verify failure** — `pytest tests/test_case.py -q`, expected `ImportError`.
+- [x] **Step 2: Run to verify failure** — `pytest tests/test_case.py -q`, expected `ImportError`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```python
 # src/queryreceipts/case.py
@@ -387,9 +387,9 @@ class Case:
         return (events[-1]["seq"] + 1) if events else 1
 ```
 
-- [ ] **Step 4: Run to verify pass** — `pytest tests/test_case.py -q`, expected `5 passed`.
+- [x] **Step 4: Run to verify pass** — `pytest tests/test_case.py -q`, expected `5 passed`.
 
-- [ ] **Step 5: Commit** — `git add -A && git commit -m "feat: case files with append-only JSONL ledger"`
+- [x] **Step 5: Commit** — `git add -A && git commit -m "feat: case files with append-only JSONL ledger"`
 
 ---
 
@@ -399,7 +399,7 @@ class Case:
 - Modify: `src/queryreceipts/case.py` (add methods to `Case`)
 - Test: `tests/test_case.py` (append tests)
 
-- [ ] **Step 1: Write the failing tests** (append to `tests/test_case.py`)
+- [x] **Step 1: Write the failing tests** (append to `tests/test_case.py`)
 
 ```python
 def _capture(case, rel="runs/baseline/diagnostics.txt", text="Table 'T'. Scan count 1, logical reads 5"):
@@ -442,9 +442,9 @@ def test_artifact_ids_are_sequential(tmp_path):
     assert (ev1.artifact_id, ev2.artifact_id) == ("ev-0001", "ev-0002")
 ```
 
-- [ ] **Step 2: Run to verify failure** — `pytest tests/test_case.py -q`, expected `AttributeError: register_evidence`.
+- [x] **Step 2: Run to verify failure** — `pytest tests/test_case.py -q`, expected `AttributeError: register_evidence`.
 
-- [ ] **Step 3: Implement** (add to `Case` in `case.py`)
+- [x] **Step 3: Implement** (add to `Case` in `case.py`)
 
 ```python
     def register_evidence(self, path: Path, *, kind: str, transport: str,
@@ -480,9 +480,9 @@ def test_artifact_ids_are_sequential(tmp_path):
         raise CaseError(f"no evidence with id {artifact_id}")
 ```
 
-- [ ] **Step 4: Run to verify pass** — `pytest tests/test_case.py -q`, expected `8 passed`.
+- [x] **Step 4: Run to verify pass** — `pytest tests/test_case.py -q`, expected `8 passed`.
 
-- [ ] **Step 5: Commit** — `git add -A && git commit -m "feat: evidence registration with case-relative paths and sequential ids"`
+- [x] **Step 5: Commit** — `git add -A && git commit -m "feat: evidence registration with case-relative paths and sequential ids"`
 
 ---
 
@@ -492,7 +492,7 @@ def test_artifact_ids_are_sequential(tmp_path):
 - Create: `src/queryreceipts/cli.py`
 - Test: `tests/test_cli.py`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # tests/test_cli.py
@@ -537,9 +537,9 @@ def test_add_registers_and_status_reports(tmp_path, capsys):
     assert state["evidence"][0]["artifact_id"] == "ev-0001"
 ```
 
-- [ ] **Step 2: Run to verify failure** — `pytest tests/test_cli.py -q`, expected `ImportError`.
+- [x] **Step 2: Run to verify failure** — `pytest tests/test_cli.py -q`, expected `ImportError`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```python
 # src/queryreceipts/cli.py
@@ -640,9 +640,9 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Step 4: Run to verify pass** — `pytest tests/test_cli.py -q`, expected `3 passed`. Also smoke the entry point: `.venv/bin/receipts --help` prints usage.
+- [x] **Step 4: Run to verify pass** — `pytest tests/test_cli.py -q`, expected `3 passed`. Also smoke the entry point: `.venv/bin/receipts --help` prints usage.
 
-- [ ] **Step 5: Commit** — `git add -A && git commit -m "feat: receipts CLI with init/add/status"`
+- [x] **Step 5: Commit** — `git add -A && git commit -m "feat: receipts CLI with init/add/status"`
 
 ---
 
@@ -653,7 +653,7 @@ if __name__ == "__main__":
 - Create: `tests/fixtures/stats_io_realistic.txt`
 - Test: `tests/test_stats_io.py`
 
-- [ ] **Step 1: Create the realistic fixture** (modeled on a real capture: modern long format, repeated tables, Worktable spool, warnings, interleaved TIME output; identifiers fictionalized)
+- [x] **Step 1: Create the realistic fixture** (modeled on a real capture: modern long format, repeated tables, Worktable spool, warnings, interleaved TIME output; identifiers fictionalized)
 
 ```
 # tests/fixtures/stats_io_realistic.txt
@@ -680,7 +680,7 @@ Table 'TRAVELER'. Scan count 2, logical reads 1104, physical reads 0, page serve
 ====END_SECTION:baseline_io_time====
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 ```python
 # tests/test_stats_io.py
@@ -718,9 +718,9 @@ def test_text_without_any_markers_is_treated_as_one_section():
         == "Table 'X'. Scan count 1, logical reads 2"
 ```
 
-- [ ] **Step 3: Run to verify failure** — `pytest tests/test_stats_io.py -q`, expected `ImportError`.
+- [x] **Step 3: Run to verify failure** — `pytest tests/test_stats_io.py -q`, expected `ImportError`.
 
-- [ ] **Step 4: Implement** (`packs/__init__.py` and `packs/sqlserver/__init__.py` are empty for now)
+- [x] **Step 4: Implement** (`packs/__init__.py` and `packs/sqlserver/__init__.py` are empty for now)
 
 ```python
 # src/queryreceipts/packs/sqlserver/stats_io.py
@@ -813,9 +813,9 @@ def parse(text: str) -> dict:
     }
 ```
 
-- [ ] **Step 5: Run to verify pass** — `pytest tests/test_stats_io.py -q`, expected `3 passed`.
+- [x] **Step 5: Run to verify pass** — `pytest tests/test_stats_io.py -q`, expected `3 passed`.
 
-- [ ] **Step 6: Commit** — `git add -A && git commit -m "feat(sqlserver): STATISTICS IO parser with sections, lob reads, aggregation"`
+- [x] **Step 6: Commit** — `git add -A && git commit -m "feat(sqlserver): STATISTICS IO parser with sections, lob reads, aggregation"`
 
 ---
 
@@ -827,7 +827,7 @@ def parse(text: str) -> dict:
 - Modify: `src/queryreceipts/cli.py` (add `parse` subcommand)
 - Test: `tests/test_stats_io.py`, `tests/test_cli.py` (append)
 
-- [ ] **Step 1: Write the failing tests** (append to `tests/test_stats_io.py`)
+- [x] **Step 1: Write the failing tests** (append to `tests/test_stats_io.py`)
 
 ```python
 def test_time_separates_compile_from_execution():
@@ -875,9 +875,9 @@ def test_parse_subcommand_summarizes_registered_evidence(tmp_path, capsys):
     assert derived and derived[0]["source"] == "ev-0001"
 ```
 
-- [ ] **Step 2: Run to verify failure** — `pytest tests/test_stats_io.py tests/test_cli.py -q`, expected failures on `render` import and `parse` subcommand.
+- [x] **Step 2: Run to verify failure** — `pytest tests/test_stats_io.py tests/test_cli.py -q`, expected failures on `render` import and `parse` subcommand.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Add to `stats_io.py`:
 
@@ -954,9 +954,9 @@ def cmd_parse(args) -> int:
 
 Also extend the `except` clause in `main` to include `KeyError`.
 
-- [ ] **Step 4: Run to verify pass** — `pytest -q`, expected all green.
+- [x] **Step 4: Run to verify pass** — `pytest -q`, expected all green.
 
-- [ ] **Step 5: Commit** — `git add -A && git commit -m "feat: parse subcommand + stats_io renderer, summaries cite source artifacts"`
+- [x] **Step 5: Commit** — `git add -A && git commit -m "feat: parse subcommand + stats_io renderer, summaries cite source artifacts"`
 
 ---
 
@@ -967,7 +967,7 @@ Also extend the `except` clause in `main` to include `KeyError`.
 - Create: `src/queryreceipts/packs/sqlserver/planxml.py`
 - Test: `tests/test_planxml.py`
 
-- [ ] **Step 1: Create the fixture** — a hand-crafted, valid showplan with two statements; statement 1 has a Hash Join with a tempdb spill, actuals showing a 100× misestimate, a missing index, and a compiled parameter; statement 2 is a trivial scan with no runtime info.
+- [x] **Step 1: Create the fixture** — a hand-crafted, valid showplan with two statements; statement 1 has a Hash Join with a tempdb spill, actuals showing a 100× misestimate, a missing index, and a compiled parameter; statement 2 is a trivial scan with no runtime info.
 
 ```xml
 <?xml version="1.0" encoding="utf-16"?>
@@ -1034,7 +1034,7 @@ Also extend the `except` clause in `main` to include `KeyError`.
 
 Save as UTF-8 (the `utf-16` in the declaration is what SSMS writes, but ElementTree reads the actual bytes; write the file UTF-8 **without** the encoding attribute to keep the fixture honest: use `<?xml version="1.0"?>`).
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 ```python
 # tests/test_planxml.py
@@ -1073,9 +1073,9 @@ def test_statement_without_runtime_info_reports_actuals_as_none():
     assert all(o["actual_rows"] is None for o in s2["operators"])
 ```
 
-- [ ] **Step 3: Run to verify failure** — `pytest tests/test_planxml.py -q`, expected `ImportError`.
+- [x] **Step 3: Run to verify failure** — `pytest tests/test_planxml.py -q`, expected `ImportError`.
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 ```python
 # src/queryreceipts/packs/sqlserver/planxml.py
@@ -1238,9 +1238,9 @@ Then delete the dead `_nearest_relop_ancestor` stub and the `children` block in 
     return out
 ```
 
-- [ ] **Step 5: Run to verify pass** — `pytest tests/test_planxml.py -q`, expected `3 passed`.
+- [x] **Step 5: Run to verify pass** — `pytest tests/test_planxml.py -q`, expected `3 passed`.
 
-- [ ] **Step 6: Commit** — `git add -A && git commit -m "feat(sqlserver): showplan parser — all statements, self-cost, actuals stay honest"`
+- [x] **Step 6: Commit** — `git add -A && git commit -m "feat(sqlserver): showplan parser — all statements, self-cost, actuals stay honest"`
 
 ---
 
@@ -1251,7 +1251,7 @@ Then delete the dead `_nearest_relop_ancestor` stub and the `children` block in 
 - Modify: `src/queryreceipts/packs/__init__.py` (register `plan_xml`)
 - Test: `tests/test_planxml.py` (append)
 
-- [ ] **Step 1: Write the failing tests** (append)
+- [x] **Step 1: Write the failing tests** (append)
 
 ```python
 def test_skew_ranks_worst_misestimates_only_where_actuals_exist():
@@ -1281,9 +1281,9 @@ def test_render_under_2kb_and_leads_with_cost_and_skew():
     assert "compiled parameter values present" in out
 ```
 
-- [ ] **Step 2: Run to verify failure** — expected `ImportError: analyze`.
+- [x] **Step 2: Run to verify failure** — expected `ImportError: analyze`.
 
-- [ ] **Step 3: Implement** (append to `planxml.py`)
+- [x] **Step 3: Implement** (append to `planxml.py`)
 
 ```python
 def analyze(plan: dict) -> dict:
@@ -1364,9 +1364,9 @@ def get_parser(kind: str):
 
 (`cmd_parse` already dispatches by kind; `--section` only applies to text captures — guard it: if `args.section` and `ev.kind != "stats_io"`, error politely.)
 
-- [ ] **Step 4: Run to verify pass** — `pytest -q`, all green.
+- [x] **Step 4: Run to verify pass** — `pytest -q`, all green.
 
-- [ ] **Step 5: Commit** — `git add -A && git commit -m "feat(sqlserver): plan analysis — skew, spills, sensitivity flag, compact render"`
+- [x] **Step 5: Commit** — `git add -A && git commit -m "feat(sqlserver): plan analysis — skew, spills, sensitivity flag, compact render"`
 
 ---
 
@@ -1377,7 +1377,7 @@ def get_parser(kind: str):
 - Modify: `src/queryreceipts/cli.py` (add `diff` subcommand)
 - Test: `tests/test_plandiff.py`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # tests/test_plandiff.py
@@ -1428,9 +1428,9 @@ def test_render_diff_mentions_the_join_flip():
     assert "1423.68" in out and "12.5" in out
 ```
 
-- [ ] **Step 2: Run to verify failure** — expected `ImportError`.
+- [x] **Step 2: Run to verify failure** — expected `ImportError`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```python
 # src/queryreceipts/packs/sqlserver/plandiff.py
@@ -1544,20 +1544,20 @@ def cmd_diff(args) -> int:
     sp.set_defaults(func=cmd_diff)
 ```
 
-- [ ] **Step 4: Run to verify pass** — `pytest -q`, all green.
+- [x] **Step 4: Run to verify pass** — `pytest -q`, all green.
 
-- [ ] **Step 5: Commit** — `git add -A && git commit -m "feat(sqlserver): plan diff — shape changes, honest about estimate semantics"`
+- [x] **Step 5: Commit** — `git add -A && git commit -m "feat(sqlserver): plan diff — shape changes, honest about estimate semantics"`
 
 ---
 
 ### Task 11: Wrap-up — full suite, README dev section, plan checkboxes
 
-- [ ] **Step 1: Full verification**
+- [x] **Step 1: Full verification**
 
 Run: `.venv/bin/python -m pytest -q`
 Expected: all tests pass (~22). Also: `.venv/bin/receipts --help` lists init/add/status/parse/diff.
 
-- [ ] **Step 2: Add a Development section to README.md**
+- [x] **Step 2: Add a Development section to README.md**
 
 Append:
 
@@ -1573,7 +1573,7 @@ Engine code is stdlib-only by policy: a proof tool should carry zero
 supply-chain surface. pytest is the only dev dependency.
 ```
 
-- [ ] **Step 3: Tick all checkboxes in this plan file, commit**
+- [x] **Step 3: Tick all checkboxes in this plan file, commit**
 
 ```bash
 git add -A && git commit -m "chore: plan 1 complete — proof-engine foundation"

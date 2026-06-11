@@ -89,6 +89,16 @@ missing permission or capture instead of pretending.
   org-specific asset.
 - No suggestion ships without its receipts.
 
+## Development
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'
+.venv/bin/python -m pytest -q
+```
+
+Engine code is stdlib-only by policy: a proof tool should carry zero
+supply-chain surface. pytest is the only dev dependency.
+
 ## Lineage
 
 Conceived 2026-06-11 from a first-principles review of the `sql-query-tuner`
