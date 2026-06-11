@@ -40,6 +40,50 @@ def cmd_add(args) -> int:
     return 0
 
 
+def cmd_verify(args) -> int:
+    """CI gate: prove the case file is intact — every evidence file still
+    matches its registered hash, the ledger is append-only-consistent, and
+    every certificate's citations still resolve. Exit 1 on any violation."""
+    from .evidence import sha256_of
+    case = _find_case(args)
+    problems = []
+    events = case.events()
+    seqs = [e["seq"] for e in events]
+    if seqs != sorted(seqs) or len(set(seqs)) != len(seqs):
+        problems.append("ledger seq is non-monotonic — journal was edited "
+                        "or reordered")
+    evidence = case.evidence()
+    broken_ids = set()
+    for ev in evidence:
+        p = case.root / ev.path
+        if not p.exists():
+            problems.append(f"MISSING {ev.artifact_id}: {ev.path}")
+            broken_ids.add(ev.artifact_id)
+        elif sha256_of(p) != ev.sha256:
+            problems.append(f"TAMPERED {ev.artifact_id}: {ev.path} no "
+                            "longer matches its registered sha256")
+            broken_ids.add(ev.artifact_id)
+    certs = [e for e in events if e["event"] == "certificate_issued"]
+    known = {ev.artifact_id for ev in evidence}
+    for c in certs:
+        for aid in c.get("evidence", []):
+            if aid not in known:
+                problems.append(f"{c['certificate_id']} cites unknown "
+                                f"artifact {aid}")
+            elif aid in broken_ids:
+                problems.append(f"{c['certificate_id']} citation broken: "
+                                f"{aid} no longer matches the hash it was "
+                                "certified against")
+    if problems:
+        print(f"VERIFY FAILED — {len(problems)} problem(s):")
+        for pr in problems:
+            print(f"  {pr}")
+        return 1
+    print(f"OK: ledger consistent, {len(evidence)} evidence artifact(s) "
+          f"match their hashes, {len(certs)} certificate(s) intact")
+    return 0
+
+
 def cmd_status(args) -> int:
     case = _find_case(args)
     evidence = [ev.__dict__ for ev in case.evidence()]
@@ -321,6 +365,12 @@ def build_parser() -> argparse.ArgumentParser:
                              "server (MCP transport)")
     sp.set_defaults(func=lambda args: __import__(
         "queryreceipts.mcp_server", fromlist=["serve"]).serve())
+
+    sp = sub.add_parser("verify",
+                        help="CI gate: evidence hashes, ledger consistency, "
+                             "certificate citations — exit 1 on violation")
+    sp.add_argument("--case", default=None)
+    sp.set_defaults(func=cmd_verify)
 
     sp = sub.add_parser("status", help="show case state")
     sp.add_argument("--case", default=None)
