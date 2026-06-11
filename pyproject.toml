@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "queryreceipts"
+version = "0.1.0"
+description = "Provably faster: query tuning where every fix ships with receipts."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [{ name = "Debabrata Saha" }]
+dependencies = []
+
+[project.scripts]
+receipts = "queryreceipts.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/queryreceipts"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
