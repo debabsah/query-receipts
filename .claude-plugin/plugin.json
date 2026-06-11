@@ -1,0 +1,9 @@
+{
+  "name": "query-receipts",
+  "version": "0.1.0",
+  "description": "Provably faster: SQL Server query tuning where every fix ships with receipts — equivalence proof, plan diff, benchmark delta.",
+  "author": {
+    "name": "Debabrata Saha"
+  },
+  "license": "MIT"
+}

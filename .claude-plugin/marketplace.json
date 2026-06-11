@@ -1,0 +1,16 @@
+{
+  "name": "receipts-plugins",
+  "description": "QueryReceipts — query tuning with receipts",
+  "owner": { "name": "Debabrata Saha" },
+  "plugins": [
+    {
+      "name": "query-receipts",
+      "description": "SQL Server query tuning where every fix ships with receipts: equivalence proof, plan diff, benchmark delta.",
+      "version": "0.1.0",
+      "author": { "name": "Debabrata Saha" },
+      "category": "database",
+      "tags": ["sql", "sql-server", "performance", "verification"],
+      "source": "./"
+    }
+  ]
+}
