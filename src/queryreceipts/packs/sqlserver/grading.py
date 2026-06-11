@@ -32,3 +32,35 @@ def grade_validation(text: str) -> dict:
             "failures": failures, "gates": gates,
             "tests": [{"test_name": r["name"], "status": r["status"],
                        "detail": r["detail"]} for r in tests]}
+
+
+def grade_benchmark(text: str) -> dict:
+    from .stats_io import SectionNotFound, extract_section, parse
+    sides = {}
+    for side in ("original", "optimized"):
+        try:
+            section = extract_section(text, side)
+        except SectionNotFound:
+            return {"verdict": "UNVERIFIED",
+                    "reason": f"section {side!r} missing from benchmark "
+                              "capture — run the full prescription"}
+        parsed = parse(section)
+        sides[side] = {
+            "elapsed_ms": parsed["time"]["elapsed_ms"],
+            "cpu_ms": parsed["time"]["cpu_ms"],
+            "logical_reads": sum(t["logical_reads"]
+                                 for t in parsed["tables"]),
+        }
+
+    def pct(before: int, after: int) -> float | None:
+        if before <= 0:
+            return None
+        return round(100 * (before - after) / before, 1)
+
+    o, n = sides["original"], sides["optimized"]
+    return {"verdict": "MEASURED", "original": o, "optimized": n,
+            "improvement": {
+                "elapsed_pct": pct(o["elapsed_ms"], n["elapsed_ms"]),
+                "cpu_pct": pct(o["cpu_ms"], n["cpu_ms"]),
+                "reads_pct": pct(o["logical_reads"], n["logical_reads"]),
+            }}

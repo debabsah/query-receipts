@@ -25,3 +25,35 @@ def test_empty_or_garbled_capture_is_unverified():
     g = grade_validation("SSMS crashed, nothing here")
     assert g["verdict"] == "UNVERIFIED"
     assert "no test rows" in g["reason"]
+
+
+def test_benchmark_grading_compares_sections():
+    from queryreceipts.packs.sqlserver.grading import grade_benchmark
+    capture = (
+        "====BEGIN_SECTION:original====\n"
+        "Table 'BIG'. Scan count 4, logical reads 2000000, "
+        "physical reads 0.\n"
+        " SQL Server Execution Times:\n"
+        "   CPU time = 90000 ms,  elapsed time = 120000 ms.\n"
+        "====END_SECTION:original====\n"
+        "====BEGIN_SECTION:optimized====\n"
+        "Table 'BIG'. Scan count 1, logical reads 40000, "
+        "physical reads 0.\n"
+        " SQL Server Execution Times:\n"
+        "   CPU time = 4000 ms,  elapsed time = 6000 ms.\n"
+        "====END_SECTION:optimized====\n")
+    g = grade_benchmark(capture)
+    assert g["original"]["elapsed_ms"] == 120000
+    assert g["optimized"]["elapsed_ms"] == 6000
+    assert g["improvement"]["elapsed_pct"] == 95.0
+    assert g["improvement"]["reads_pct"] == 98.0
+
+
+def test_benchmark_grading_unverified_when_a_section_is_missing():
+    from queryreceipts.packs.sqlserver.grading import grade_benchmark
+    g = grade_benchmark("====BEGIN_SECTION:original====\n"
+                        " SQL Server Execution Times:\n"
+                        "   CPU time = 1 ms,  elapsed time = 2 ms.\n"
+                        "====END_SECTION:original====\n")
+    assert g["verdict"] == "UNVERIFIED"
+    assert "optimized" in g["reason"]
