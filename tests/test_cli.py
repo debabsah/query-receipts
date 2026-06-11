@@ -1,0 +1,40 @@
+import json
+
+from queryreceipts.cli import main
+
+
+def test_init_creates_case(tmp_path, capsys):
+    rc = main(["init", str(tmp_path / "c"), "--engine", "sqlserver",
+               "--database", "Sales", "--symptom", "slow nightly job"])
+    assert rc == 0
+    assert (tmp_path / "c" / "case.json").exists()
+    assert "opened case" in capsys.readouterr().out
+
+
+def test_init_twice_fails_cleanly(tmp_path, capsys):
+    args = ["init", str(tmp_path / "c"), "--engine", "sqlserver",
+            "--database", "S", "--symptom", "x"]
+    assert main(args) == 0
+    assert main(args) == 1
+    assert "already contains" in capsys.readouterr().err
+
+
+def test_add_registers_and_status_reports(tmp_path, capsys):
+    root = tmp_path / "c"
+    main(["init", str(root), "--engine", "sqlserver",
+          "--database", "S", "--symptom", "x"])
+    cap = root / "runs" / "baseline" / "diagnostics.txt"
+    cap.parent.mkdir(parents=True)
+    cap.write_text("Table 'T'. Scan count 1, logical reads 5",
+                   encoding="utf-8")
+    rc = main(["add", str(cap), "--kind", "stats_io", "--transport",
+               "courier", "--environment", "production", "--runner", "deb",
+               "--case", str(root)])
+    assert rc == 0
+    assert "ev-0001" in capsys.readouterr().out
+
+    rc = main(["status", "--case", str(root), "--json"])
+    assert rc == 0
+    state = json.loads(capsys.readouterr().out)
+    assert state["case"]["case"] == "c"
+    assert state["evidence"][0]["artifact_id"] == "ev-0001"
