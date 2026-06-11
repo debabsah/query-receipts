@@ -1,5 +1,5 @@
 ====BEGIN_SECTION:baseline_io_time====
-START NightlyExtract original baseline
+START FleetExtract original baseline
 
  SQL Server parse and compile time:
    CPU time = 391 ms, elapsed time = 391 ms.
@@ -7,9 +7,9 @@ START NightlyExtract original baseline
  SQL Server Execution Times:
    CPU time = 0 ms,  elapsed time = 0 ms.
 Warning: Null value is eliminated by an aggregate or other SET operation.
-Table 'CONTACT_ADDRESS'. Scan count 67396, logical reads 734732, physical reads 1, page server reads 0, read-ahead reads 11, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
+Table 'ROUTE_SEGMENT'. Scan count 67396, logical reads 734732, physical reads 1, page server reads 0, read-ahead reads 11, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
 Table 'Worktable'. Scan count 66139, logical reads 11969839, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
-Table 'GEO_COUNTRY'. Scan count 0, logical reads 34996, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
+Table 'STATUS_CODE'. Scan count 0, logical reads 34996, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
 Table 'TRAVELER'. Scan count 23648, logical reads 250329, physical reads 28, page server reads 0, read-ahead reads 1, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
 
  SQL Server Execution Times:

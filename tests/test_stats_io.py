@@ -22,7 +22,7 @@ def test_tables_aggregate_across_statements_and_rank_by_reads():
 
 def test_section_extraction_honest_about_missing_sections():
     text = FIXTURE.read_text(encoding="utf-8")
-    assert "START NightlyExtract" in extract_section(text, "baseline_io_time")
+    assert "START FleetExtract" in extract_section(text, "baseline_io_time")
     with pytest.raises(SectionNotFound, match="rowcounts"):
         extract_section(text, "rowcounts")
 

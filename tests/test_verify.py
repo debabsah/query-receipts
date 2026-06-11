@@ -10,7 +10,7 @@ def _case_with_evidence(tmp_path):
     cap.write_text("Table 'T'. Scan count 1, logical reads 5",
                    encoding="utf-8")
     main(["add", str(cap), "--kind", "stats_io", "--transport", "courier",
-          "--environment", "synthetic", "--runner", "deb",
+          "--environment", "synthetic", "--runner", "analyst",
           "--case", str(root)])
     return root, cap
 

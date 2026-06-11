@@ -29,7 +29,7 @@ def _case_with(tmp_path, validation_text, bench_text=None):
     v.write_text(validation_text, encoding="utf-8")
     ev_v = case.register_evidence(v, kind="validation_results",
                                   transport="courier",
-                                  environment="synthetic", runner="deb")
+                                  environment="synthetic", runner="analyst")
     ev_b = None
     if bench_text is not None:
         b = case.root / "benchmarks" / "v1_results.txt"
@@ -37,7 +37,7 @@ def _case_with(tmp_path, validation_text, bench_text=None):
         b.write_text(bench_text, encoding="utf-8")
         ev_b = case.register_evidence(b, kind="benchmark_results",
                                       transport="courier",
-                                      environment="synthetic", runner="deb")
+                                      environment="synthetic", runner="analyst")
     return case, ev_v, ev_b
 
 

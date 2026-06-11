@@ -15,7 +15,7 @@ def test_evidence_event_round_trip():
     ev = Evidence(
         artifact_id="ev-0001", path="runs/baseline/diagnostics.txt",
         sha256="ab" * 32, kind="stats_io", engine="sqlserver",
-        transport="courier", environment="production", runner="deb",
+        transport="courier", environment="production", runner="analyst",
         captured_at="", registered_at="2026-06-11T00:00:00+00:00", notes="",
     )
     event = ev.to_event()

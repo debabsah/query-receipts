@@ -57,7 +57,7 @@ def test_register_evidence_appends_ledger_and_assigns_id(tmp_path):
     p = _capture(case)
     ev = case.register_evidence(
         p, kind="stats_io", transport="courier",
-        environment="production", runner="deb")
+        environment="production", runner="analyst")
     assert ev.artifact_id == "ev-0001"
     assert ev.path == "runs/baseline/diagnostics.txt"
     assert len(ev.sha256) == 64
@@ -71,7 +71,7 @@ def test_register_evidence_outside_case_root_is_refused(tmp_path):
     with pytest.raises(CaseError, match="inside the case directory"):
         case.register_evidence(
             outside, kind="stats_io", transport="courier",
-            environment="production", runner="deb")
+            environment="production", runner="analyst")
 
 
 def test_artifact_ids_are_sequential(tmp_path):
@@ -79,7 +79,7 @@ def test_artifact_ids_are_sequential(tmp_path):
     a = _capture(case, "a.txt")
     b = _capture(case, "b.txt")
     ev1 = case.register_evidence(a, kind="other", transport="courier",
-                                 environment="synthetic", runner="deb")
+                                 environment="synthetic", runner="analyst")
     ev2 = case.register_evidence(b, kind="other", transport="courier",
-                                 environment="synthetic", runner="deb")
+                                 environment="synthetic", runner="analyst")
     assert (ev1.artifact_id, ev2.artifact_id) == ("ev-0001", "ev-0002")

@@ -12,7 +12,7 @@ null_dist:x                    PASS   old=0 new=0
 gate:ansi_nulls                INFO   1
 gate:database                  INFO   FleetDB
 gate:datefirst                 INFO   7
-gate:engine_version            INFO   16.0.4135.4
+gate:engine_version            INFO   16.0.4075.1
 gate:language                  INFO   us_english
 gate:quoted_identifier         INFO   1
 

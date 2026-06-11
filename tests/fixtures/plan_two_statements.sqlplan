@@ -43,13 +43,13 @@
         </ParameterList>
       </QueryPlan>
     </StmtSimple>
-    <StmtSimple StatementText="SELECT COUNT(*) FROM GEO_COUNTRY" StatementId="2" StatementSubTreeCost="0.05" StatementEstRows="1" StatementType="SELECT">
+    <StmtSimple StatementText="SELECT COUNT(*) FROM STATUS_CODE" StatementId="2" StatementSubTreeCost="0.05" StatementEstRows="1" StatementType="SELECT">
       <QueryPlan>
         <RelOp NodeId="0" PhysicalOp="Stream Aggregate" LogicalOp="Aggregate" EstimateRows="1" EstimatedTotalSubtreeCost="0.05">
           <StreamAggregate>
             <RelOp NodeId="1" PhysicalOp="Index Scan" LogicalOp="Index Scan" EstimateRows="202" EstimatedTotalSubtreeCost="0.04">
               <IndexScan Ordered="false">
-                <Object Database="[FleetDB]" Schema="[dbo]" Table="[GEO_COUNTRY]" Index="[IX_GEO_COUNTRY]" IndexKind="NonClustered"/>
+                <Object Database="[FleetDB]" Schema="[dbo]" Table="[STATUS_CODE]" Index="[IX_STATUS_CODE]" IndexKind="NonClustered"/>
               </IndexScan>
             </RelOp>
           </StreamAggregate>

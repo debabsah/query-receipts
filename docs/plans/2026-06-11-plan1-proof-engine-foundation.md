@@ -162,7 +162,7 @@ def test_evidence_event_round_trip():
     ev = Evidence(
         artifact_id="ev-0001", path="runs/baseline/diagnostics.txt",
         sha256="ab" * 32, kind="stats_io", engine="sqlserver",
-        transport="courier", environment="production", runner="deb",
+        transport="courier", environment="production", runner="analyst",
         captured_at="", registered_at="2026-06-11T00:00:00+00:00", notes="",
     )
     event = ev.to_event()
@@ -414,7 +414,7 @@ def test_register_evidence_appends_ledger_and_assigns_id(tmp_path):
     p = _capture(case)
     ev = case.register_evidence(
         p, kind="stats_io", transport="courier",
-        environment="production", runner="deb")
+        environment="production", runner="analyst")
     assert ev.artifact_id == "ev-0001"
     assert ev.path == "runs/baseline/diagnostics.txt"
     assert len(ev.sha256) == 64
@@ -428,7 +428,7 @@ def test_register_evidence_outside_case_root_is_refused(tmp_path):
     with pytest.raises(CaseError, match="inside the case directory"):
         case.register_evidence(
             outside, kind="stats_io", transport="courier",
-            environment="production", runner="deb")
+            environment="production", runner="analyst")
 
 
 def test_artifact_ids_are_sequential(tmp_path):
@@ -436,9 +436,9 @@ def test_artifact_ids_are_sequential(tmp_path):
     a = _capture(case, "a.txt")
     b = _capture(case, "b.txt")
     ev1 = case.register_evidence(a, kind="other", transport="courier",
-                                 environment="synthetic", runner="deb")
+                                 environment="synthetic", runner="analyst")
     ev2 = case.register_evidence(b, kind="other", transport="courier",
-                                 environment="synthetic", runner="deb")
+                                 environment="synthetic", runner="analyst")
     assert (ev1.artifact_id, ev2.artifact_id) == ("ev-0001", "ev-0002")
 ```
 
@@ -525,7 +525,7 @@ def test_add_registers_and_status_reports(tmp_path, capsys):
     cap.parent.mkdir(parents=True)
     cap.write_text("Table 'T'. Scan count 1, logical reads 5", encoding="utf-8")
     rc = main(["add", str(cap), "--kind", "stats_io", "--transport", "courier",
-               "--environment", "production", "--runner", "deb",
+               "--environment", "production", "--runner", "analyst",
                "--case", str(root)])
     assert rc == 0
     assert "ev-0001" in capsys.readouterr().out
@@ -653,12 +653,12 @@ if __name__ == "__main__":
 - Create: `tests/fixtures/stats_io_realistic.txt`
 - Test: `tests/test_stats_io.py`
 
-- [x] **Step 1: Create the realistic fixture** (modeled on a real capture: modern long format, repeated tables, Worktable spool, warnings, interleaved TIME output; identifiers fictionalized)
+- [x] **Step 1: Create the realistic fixture** (modeled on real-world capture quirks: modern long format, repeated tables, Worktable spool, warnings, interleaved TIME output; identifiers fictionalized)
 
 ```
 # tests/fixtures/stats_io_realistic.txt
 ====BEGIN_SECTION:baseline_io_time====
-START NightlyExtract original baseline
+START FleetExtract original baseline
 
  SQL Server parse and compile time: 
    CPU time = 391 ms, elapsed time = 391 ms.
@@ -666,9 +666,9 @@ START NightlyExtract original baseline
  SQL Server Execution Times:
    CPU time = 0 ms,  elapsed time = 0 ms.
 Warning: Null value is eliminated by an aggregate or other SET operation.
-Table 'CONTACT_ADDRESS'. Scan count 67396, logical reads 734732, physical reads 1, page server reads 0, read-ahead reads 11, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
+Table 'ROUTE_SEGMENT'. Scan count 67396, logical reads 734732, physical reads 1, page server reads 0, read-ahead reads 11, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
 Table 'Worktable'. Scan count 66139, logical reads 11969839, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
-Table 'GEO_COUNTRY'. Scan count 0, logical reads 34996, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
+Table 'STATUS_CODE'. Scan count 0, logical reads 34996, physical reads 0, page server reads 0, read-ahead reads 0, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
 Table 'TRAVELER'. Scan count 23648, logical reads 250329, physical reads 28, page server reads 0, read-ahead reads 1, page server read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob page server reads 0, lob read-ahead reads 0, lob page server read-ahead reads 0.
 
  SQL Server Execution Times:
@@ -708,7 +708,7 @@ def test_tables_aggregate_across_statements_and_rank_by_reads():
 
 def test_section_extraction_honest_about_missing_sections():
     text = FIXTURE.read_text(encoding="utf-8")
-    assert "START NightlyExtract" in extract_section(text, "baseline_io_time")
+    assert "START FleetExtract" in extract_section(text, "baseline_io_time")
     with pytest.raises(SectionNotFound, match="baseline_io_time"):
         extract_section(text, "rowcounts")
 
@@ -863,7 +863,7 @@ def test_parse_subcommand_summarizes_registered_evidence(tmp_path, capsys):
         "   CPU time = 5000 ms,  elapsed time = 9000 ms.\n",
         encoding="utf-8")
     main(["add", str(cap), "--kind", "stats_io", "--transport", "courier",
-          "--environment", "synthetic", "--runner", "deb", "--case", str(root)])
+          "--environment", "synthetic", "--runner", "analyst", "--case", str(root)])
     rc = main(["parse", "ev-0001", "--case", str(root)])
     assert rc == 0
     out = capsys.readouterr().out
@@ -1015,13 +1015,13 @@ Also extend the `except` clause in `main` to include `KeyError`.
         </ParameterList>
       </QueryPlan>
     </StmtSimple>
-    <StmtSimple StatementText="SELECT COUNT(*) FROM GEO_COUNTRY" StatementId="2" StatementSubTreeCost="0.05" StatementEstRows="1" StatementType="SELECT">
+    <StmtSimple StatementText="SELECT COUNT(*) FROM STATUS_CODE" StatementId="2" StatementSubTreeCost="0.05" StatementEstRows="1" StatementType="SELECT">
       <QueryPlan>
         <RelOp NodeId="0" PhysicalOp="Stream Aggregate" LogicalOp="Aggregate" EstimateRows="1" EstimatedTotalSubtreeCost="0.05">
           <StreamAggregate>
             <RelOp NodeId="1" PhysicalOp="Index Scan" LogicalOp="Index Scan" EstimateRows="202" EstimatedTotalSubtreeCost="0.04">
               <IndexScan Ordered="false">
-                <Object Database="[FleetDB]" Schema="[dbo]" Table="[GEO_COUNTRY]" Index="[IX_GEO_COUNTRY]" IndexKind="NonClustered"/>
+                <Object Database="[FleetDB]" Schema="[dbo]" Table="[STATUS_CODE]" Index="[IX_STATUS_CODE]" IndexKind="NonClustered"/>
               </IndexScan>
             </RelOp>
           </StreamAggregate>

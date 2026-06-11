@@ -475,7 +475,7 @@ row_count                      PASS   old=66139 new=66139
 gate:ansi_nulls                INFO   1
 gate:database                  INFO   FleetDB
 gate:datefirst                 INFO   7
-gate:engine_version            INFO   16.0.4135.4
+gate:engine_version            INFO   16.0.4075.1
 gate:language                  INFO   us_english
 gate:quoted_identifier         INFO   1
 
@@ -688,7 +688,7 @@ def _case_with(tmp_path, validation_text, bench_text=None):
     v.write_text(validation_text, encoding="utf-8")
     ev_v = case.register_evidence(v, kind="validation_results",
                                   transport="courier",
-                                  environment="synthetic", runner="deb")
+                                  environment="synthetic", runner="analyst")
     ev_b = None
     if bench_text is not None:
         b = case.root / "benchmarks" / "v1_results.txt"
@@ -696,7 +696,7 @@ def _case_with(tmp_path, validation_text, bench_text=None):
         b.write_text(bench_text, encoding="utf-8")
         ev_b = case.register_evidence(b, kind="benchmark_results",
                                       transport="courier",
-                                      environment="synthetic", runner="deb")
+                                      environment="synthetic", runner="analyst")
     return case, ev_v, ev_b
 
 
@@ -903,7 +903,7 @@ def test_prescribe_grade_certify_loop(tmp_path, capsys):
         "gate:database                  INFO   FleetDB\n", encoding="utf-8")
     main(["add", str(results), "--kind", "validation_results",
           "--transport", "courier", "--environment", "synthetic",
-          "--runner", "deb", "--case", str(root)])
+          "--runner", "analyst", "--case", str(root)])
     capsys.readouterr()
 
     rc = main(["grade", "ev-0001", "--case", str(root)])

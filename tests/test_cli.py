@@ -28,7 +28,7 @@ def test_add_registers_and_status_reports(tmp_path, capsys):
     cap.write_text("Table 'T'. Scan count 1, logical reads 5",
                    encoding="utf-8")
     rc = main(["add", str(cap), "--kind", "stats_io", "--transport",
-               "courier", "--environment", "production", "--runner", "deb",
+               "courier", "--environment", "production", "--runner", "analyst",
                "--case", str(root)])
     assert rc == 0
     assert "ev-0001" in capsys.readouterr().out
@@ -52,7 +52,7 @@ def test_parse_subcommand_summarizes_registered_evidence(tmp_path, capsys):
         "   CPU time = 5000 ms,  elapsed time = 9000 ms.\n",
         encoding="utf-8")
     main(["add", str(cap), "--kind", "stats_io", "--transport", "courier",
-          "--environment", "synthetic", "--runner", "deb",
+          "--environment", "synthetic", "--runner", "analyst",
           "--case", str(root)])
     rc = main(["parse", "ev-0001", "--case", str(root)])
     assert rc == 0
@@ -86,7 +86,7 @@ def test_prescribe_grade_certify_loop(tmp_path, capsys):
         "gate:database                  INFO   FleetDB\n", encoding="utf-8")
     main(["add", str(results), "--kind", "validation_results",
           "--transport", "courier", "--environment", "synthetic",
-          "--runner", "deb", "--case", str(root)])
+          "--runner", "analyst", "--case", str(root)])
     capsys.readouterr()
 
     rc = main(["grade", "ev-0001", "--case", str(root)])
