@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import re
 
+from ..sections import SectionNotFound, extract_section  # noqa: F401 (re-export)
+
 TABLE_RE = re.compile(
     r"Table '(?P<table>[^']+)'\. Scan count (?P<scans>\d+), "
     r"logical reads (?P<reads>\d+)")
@@ -18,26 +20,6 @@ TIME_RE = re.compile(
 WARNING_RE = re.compile(r"^Warning: (?P<msg>.+?)\s*$", re.MULTILINE)
 COMPILE_HEADER = "parse and compile time"
 EXEC_HEADER = "Execution Times"
-SECTION_BEGIN = "====BEGIN_SECTION:{name}===="
-SECTION_END = "====END_SECTION:{name}===="
-
-
-class SectionNotFound(Exception):
-    pass
-
-
-def extract_section(text: str, name: str) -> str:
-    if "====BEGIN_SECTION:" not in text:
-        return text  # unmarked capture: the whole file is the section
-    begin = SECTION_BEGIN.format(name=name)
-    if begin not in text:
-        found = sorted(set(re.findall(r"====BEGIN_SECTION:(\w+)====", text)))
-        raise SectionNotFound(
-            f"section {name!r} not in capture; sections present: {found}")
-    start = text.index(begin) + len(begin)
-    end = SECTION_END.format(name=name)
-    stop = text.index(end, start) if end in text else len(text)
-    return text[start:stop]
 
 
 def parse(text: str) -> dict:

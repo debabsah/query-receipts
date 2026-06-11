@@ -55,15 +55,13 @@ def cmd_status(args) -> int:
 
 def cmd_parse(args) -> int:
     from .packs import get_parser
-    from .packs.sqlserver.stats_io import extract_section
+    from .packs.sections import extract_section
     case = _find_case(args)
     ev = case.get_evidence(args.artifact)
-    parse_fn, render_fn = get_parser(ev.kind)
+    parse_fn, render_fn = get_parser(ev.kind,
+                                     case.meta.get("engine", "sqlserver"))
     text = (case.root / ev.path).read_text(encoding="utf-8", errors="replace")
     if args.section:
-        if ev.kind != "stats_io":
-            raise CaseError(
-                f"--section applies to text captures, not {ev.kind}")
         text = extract_section(text, args.section)
     parsed = parse_fn(text)
     case.append({"event": "summary_derived", "source": ev.artifact_id,
@@ -98,8 +96,10 @@ def cmd_diff(args) -> int:
 
 
 def cmd_prescribe(args) -> int:
+    from .packs import get_pack
     from .prescription import issue
     case = _find_case(args)
+    pack = get_pack(case.meta.get("engine", "sqlserver"))
     n = sum(1 for e in case.events()
             if e["event"] == "prescription_issued"
             and e["prescription"] == args.kind) + 1
@@ -117,10 +117,11 @@ def cmd_prescribe(args) -> int:
         original = case.root / "original.sql"
         if not original.exists():
             raise CaseError("validation needs original.sql in the case root")
-        # validation embeds both queries as N'…' literals (CTE-capable path)
-        values["ORIGINAL_QUERY_LITERAL"] = original.read_text(
-            encoding="utf-8").replace("'", "''")
-        values["OPTIMIZED_QUERY_LITERAL"] = rewrite_sql.replace("'", "''")
+        if pack["validation_style"] == "literal":
+            # queries embedded as N'…' literals (dynamic-SQL materialization)
+            values["ORIGINAL_QUERY_LITERAL"] = original.read_text(
+                encoding="utf-8").replace("'", "''")
+            values["OPTIMIZED_QUERY_LITERAL"] = rewrite_sql.replace("'", "''")
         values["NATURAL_KEY"] = args.natural_key or ""
         save_as = f"prescriptions/validation_v{n}.sql"
         expected = f"validation/v{n}_results.txt"
@@ -132,7 +133,7 @@ def cmd_prescribe(args) -> int:
     else:
         save_as = "prescriptions/diagnostics.sql"
         expected = "runs/baseline/diagnostics.txt"
-        register_kind = "stats_io"
+        register_kind = pack["diagnostics_kind"]
     p = issue(case, args.kind, values=values, save_as=save_as,
               expected_capture=expected, injections=injections)
     print(f"prescription written: {p}")
@@ -142,15 +143,16 @@ def cmd_prescribe(args) -> int:
 
 
 def cmd_grade(args) -> int:
-    from .packs.sqlserver.grading import grade_benchmark, grade_validation
+    from .packs import get_pack
     case = _find_case(args)
+    pack = get_pack(case.meta.get("engine", "sqlserver"))
     ev = case.get_evidence(args.artifact)
     text = (case.root / ev.path).read_text(encoding="utf-8",
                                            errors="replace")
     if ev.kind == "validation_results":
-        g = grade_validation(text)
+        g = pack["grade_validation"](text)
     elif ev.kind == "benchmark_results":
-        g = grade_benchmark(text)
+        g = pack["grade_benchmark"](text)
     else:
         raise CaseError(f"cannot grade kind {ev.kind!r}")
     case.append({"event": "graded", "source": ev.artifact_id,

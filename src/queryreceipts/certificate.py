@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 
 from .case import Case, utcnow
-from .packs.sqlserver.grading import grade_benchmark, grade_validation
+from .packs import get_pack
 
 CONDITIONS = [
     "valid for the schema and statistics state at capture time",
@@ -23,6 +23,9 @@ CONDITIONS = [
 
 def issue_certificate(case: Case, *, validation_id: str | None,
                       benchmark_id: str | None, rewrite: str) -> dict:
+    pack = get_pack(case.meta.get("engine", "sqlserver"))
+    grade_validation = pack["grade_validation"]
+    grade_benchmark = pack["grade_benchmark"]
     missing, evidence, gates = [], [], {}
     validation = benchmark = None
 
