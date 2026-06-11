@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<ShowPlanXML xmlns="http://schemas.microsoft.com/sqlserver/2004/07/showplan" Version="1.564">
+  <BatchSequence><Batch><Statements>
+    <StmtSimple StatementText="SELECT r.ID FROM RESERVATION r JOIN TRAVELER t ON t.RES_ID = r.ID WHERE r.START_DATE &gt; @from" StatementId="1" StatementSubTreeCost="1423.68" StatementEstRows="120" StatementType="SELECT">
+      <QueryPlan CachedPlanSize="512" CompileTime="391" CompileCPU="391" CompileMemory="8192">
+        <MissingIndexes>
+          <MissingIndexGroup Impact="91.5">
+            <MissingIndex Database="[FleetDB]" Schema="[dbo]" Table="[RESERVATION]">
+              <ColumnGroup Usage="EQUALITY"><Column Name="[STATUS_ID]" ColumnId="3"/></ColumnGroup>
+              <ColumnGroup Usage="INCLUDE"><Column Name="[START_DATE]" ColumnId="5"/></ColumnGroup>
+            </MissingIndex>
+          </MissingIndexGroup>
+        </MissingIndexes>
+        <MemoryGrantInfo SerialRequiredMemory="512" SerialDesiredMemory="1024" RequestedMemory="1024" GrantedMemory="1024" MaxUsedMemory="892"/>
+        <RelOp NodeId="0" PhysicalOp="Hash Match" LogicalOp="Inner Join" EstimateRows="120" EstimatedTotalSubtreeCost="1423.68">
+          <RunTimeInformation>
+            <RunTimeCountersPerThread Thread="0" ActualRows="12000" ActualEndOfScans="1" ActualExecutions="1"/>
+          </RunTimeInformation>
+          <Warnings>
+            <SpillToTempDb SpillLevel="2" SpilledThreadCount="1"/>
+          </Warnings>
+          <Hash>
+            <RelOp NodeId="1" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan" EstimateRows="729842" EstimatedTotalSubtreeCost="800.10">
+              <RunTimeInformation>
+                <RunTimeCountersPerThread Thread="0" ActualRows="729842" ActualEndOfScans="1" ActualExecutions="1"/>
+              </RunTimeInformation>
+              <IndexScan Ordered="false">
+                <Object Database="[FleetDB]" Schema="[dbo]" Table="[RESERVATION]" Index="[PK_RESERVATION]" IndexKind="Clustered"/>
+              </IndexScan>
+            </RelOp>
+            <RelOp NodeId="2" PhysicalOp="Index Seek" LogicalOp="Index Seek" EstimateRows="120" EstimatedTotalSubtreeCost="403.20">
+              <RunTimeInformation>
+                <RunTimeCountersPerThread Thread="0" ActualRows="12000" ActualEndOfScans="1" ActualExecutions="1"/>
+              </RunTimeInformation>
+              <IndexScan Ordered="true">
+                <Object Database="[FleetDB]" Schema="[dbo]" Table="[TRAVELER]" Index="[IX_TRAVELER_RES]" IndexKind="NonClustered"/>
+              </IndexScan>
+            </RelOp>
+          </Hash>
+        </RelOp>
+        <ParameterList>
+          <ColumnReference Column="@from" ParameterDataType="datetime" ParameterCompiledValue="'2025-04-01 00:00:00.000'"/>
+        </ParameterList>
+      </QueryPlan>
+    </StmtSimple>
+    <StmtSimple StatementText="SELECT COUNT(*) FROM GEO_COUNTRY" StatementId="2" StatementSubTreeCost="0.05" StatementEstRows="1" StatementType="SELECT">
+      <QueryPlan>
+        <RelOp NodeId="0" PhysicalOp="Stream Aggregate" LogicalOp="Aggregate" EstimateRows="1" EstimatedTotalSubtreeCost="0.05">
+          <StreamAggregate>
+            <RelOp NodeId="1" PhysicalOp="Index Scan" LogicalOp="Index Scan" EstimateRows="202" EstimatedTotalSubtreeCost="0.04">
+              <IndexScan Ordered="false">
+                <Object Database="[FleetDB]" Schema="[dbo]" Table="[GEO_COUNTRY]" Index="[IX_GEO_COUNTRY]" IndexKind="NonClustered"/>
+              </IndexScan>
+            </RelOp>
+          </StreamAggregate>
+        </RelOp>
+      </QueryPlan>
+    </StmtSimple>
+  </Statements></Batch></BatchSequence>
+</ShowPlanXML>
