@@ -1,9 +1,11 @@
 # Worked example: the FleetDB case
 
 A complete QueryReceipts investigation, end to end, against a reproducible
-workload you can run yourself. Every number below comes from the repo's own
-integration test (`pytest -m integration`) driving a real SQL Server 2022
-instance — nothing is illustrative or made up.
+workload you can run yourself — first on SQL Server (courier-style), then
+the same pathology on PostgreSQL driven entirely by the driver transport.
+Every number below comes from the repo's own integration tests
+(`pytest -m integration`) against real database containers — nothing is
+illustrative or made up.
 
 ## The setup
 
@@ -89,6 +91,67 @@ Conditions:
 - invalidated by schema changes to referenced tables
 - invalidated by edits to original or optimized SQL
 ```
+
+## The same investigation on PostgreSQL — via the driver transport
+
+The pgfleet workload (`examples/pgfleet/`) carries the same pathology in
+Postgres syntax: a correlated `ORDER BY … LIMIT 1` subquery per row plus a
+non-sargable `EXTRACT(YEAR …)` predicate. This time nobody plays courier —
+`receipts run` executes every prescription itself:
+
+```bash
+bash scripts/pgfleet_up.sh
+
+receipts init pg-case --engine postgres --database fleetdb \
+  --symptom "report slow" \
+  --runner-cmd 'docker cp {sql} pgfleet:/tmp/r.sql >/dev/null && \
+    docker exec pgfleet psql -X -q -U postgres -d fleetdb -f /tmp/r.sql'
+cp examples/pgfleet/original.sql pg-case/original.sql
+cp -r examples/pgfleet/optimized_v1.sql pg-case/optimized/  # after mkdir
+
+# 1. baseline — EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON), executed for you
+receipts prescribe diagnostics --case pg-case
+receipts run pg-case/prescriptions/diagnostics.sql \
+  --environment synthetic --case pg-case
+receipts parse ev-0001 --section baseline --case pg-case
+#   loops-aware skew detection: actual rows × loops vs plan rows
+
+# 2-4. prove → measure (twice, per the pinned protocol) → certify
+receipts prescribe validation --rewrite optimized/optimized_v1.sql \
+  --natural-key res_id --case pg-case
+receipts run pg-case/prescriptions/validation_v1.sql \
+  --environment synthetic --case pg-case
+receipts grade ev-0002 --case pg-case                       # PROVEN
+receipts prescribe benchmark --rewrite optimized/optimized_v1.sql --case pg-case
+receipts run pg-case/prescriptions/benchmark_v1.sql --environment synthetic --case pg-case
+receipts run pg-case/prescriptions/benchmark_v1.sql --environment synthetic --case pg-case
+receipts certify --validation ev-0002 --benchmark ev-0004 \
+  --rewrite optimized/optimized_v1.sql --case pg-case
+```
+
+The certificate from this repo's integration run:
+
+```
+# Certificate cert-0001 — PROVEN
+
+Equivalence: 15 checks passed, 0 failed.
+Performance: elapsed -99.5%, reads -100.0% (per pinned protocol).
+
+  original:  elapsed 4,732 ms | shared buffers hit+read 988,853
+  optimized: elapsed    25 ms | shared buffers hit+read     369
+
+Comparability gates: gate:database=fleetdb, gate:engine_version,
+gate:timezone, gate:datestyle
+```
+
+(No CPU figures: Postgres doesn't report them, so the certificate doesn't
+invent them. The CTE-headed rewrite needed no special handling — Postgres
+validation materializes via `CREATE TEMP TABLE … AS`, which takes CTEs
+natively.)
+
+Notice what's identical across engines: the loop, the ledger, the verdict
+vocabulary, the certificate. Only the capture pack changed — that's the
+pack abstraction earning its keep.
 
 ## Why this matters
 

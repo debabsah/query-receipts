@@ -40,9 +40,11 @@ receipts certify --validation ev-0002 --benchmark ev-0003 \
   --rewrite optimized/optimized_v1.sql --case my-case
 ```
 
-See the [worked example](docs/examples/fleetdb-walkthrough.md) — a real
-certificate (reads −99.8%, elapsed −91.3%, 16/16 equivalence checks) from a
-reproducible workload this repo's integration suite runs on every change.
+See the [worked example](docs/examples/fleetdb-walkthrough.md) — real
+certificates from reproducible workloads this repo's CI re-proves on every
+change: SQL Server (reads −99.8%, elapsed −91.3%, 16/16 equivalence checks)
+and PostgreSQL via the driver transport (elapsed 4,732 ms → 25 ms, buffer
+reads 988,853 → 369, 15/15 checks).
 
 ## The thesis
 
